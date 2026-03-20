@@ -1546,6 +1546,23 @@ tbody tr:hover {
     min-width: 640px;
   }
 
+  /* ランキング/履歴テーブルだけはスマホ幅に収める（横にはみ出し防止） */
+  #liveRankTable,
+  #historyTable {
+    min-width: 0;
+    width: 100%;
+  }
+
+  #liveRankTable th:nth-child(2),
+  #liveRankTable td:nth-child(2),
+  #historyTable th:nth-child(2),
+  #historyTable td:nth-child(2) {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+
   .table-wrap {
     -webkit-overflow-scrolling: touch;
   }
