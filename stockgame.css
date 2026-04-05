@@ -274,6 +274,19 @@ input[type="password"]::-ms-clear {
   font-weight: 650;
 }
 
+/* 冒頭説明: 意図した位置で改行（<br />）＋幅に応じた文字サイズ */
+.rule-lead.rule-lead--flow {
+  font-size: clamp(0.86rem, 0.55vw + 0.78rem, 1.05rem);
+  line-height: 1.6;
+  font-weight: 600;
+  max-width: 40rem;
+}
+
+#ruleCard .rule-body .rule-lead.rule-lead--flow {
+  font-size: clamp(0.84rem, 0.5vw + 0.74rem, 1.02rem);
+  line-height: 1.52;
+}
+
 .rule-body .rule-list,
 .register-rules-body .rule-list {
   margin: 0;
@@ -561,6 +574,43 @@ small {
   margin-top: 12px;
 }
 
+/* ログイン: 送信を上段、下段に「新規登録へ」「パスワードを忘れたとき」を横並び */
+/* ログイン時: ID 欄と「パスワード」ラベルのあいだに約1行ぶんの余白 */
+#authForm .auth-field-password {
+  margin-top: 1.35rem;
+}
+
+#authForm .auth-form-button-stack {
+  margin-top: 12px;
+}
+
+#authForm .auth-form-submit-row {
+  display: flex;
+}
+
+#authForm .auth-form-submit-row .btn {
+  width: 100%;
+}
+
+#authForm .auth-form-secondary-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 1rem;
+}
+
+#authForm .auth-form-secondary-row .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 46px;
+  padding: 8px 10px;
+  font-size: clamp(0.78rem, 1.8vw + 0.55rem, 0.92rem);
+  font-weight: 650;
+  line-height: 1.2;
+}
+
 .btn {
   border: 0;
   border-radius: 12px;
@@ -669,6 +719,12 @@ small {
   font-size: 0.83rem;
   font-weight: 700;
   line-height: 1.35;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  box-sizing: border-box;
+  text-align: center;
 }
 
 .suggest-list {
@@ -704,8 +760,12 @@ small {
 
 .suggest-name {
   color: #183f41;
-  font-weight: 700;
+  font-weight: 400;
   font-size: 0.9rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
 }
 
 .suggest-meta {
@@ -730,7 +790,16 @@ small {
 }
 
 .preview-main strong {
-  font-size: 1.05rem;
+  font-size: clamp(0.92rem, 0.65vw + 0.8rem, 1.05rem);
+  font-weight: 400;
+}
+
+#pickPanel #previewName {
+  font-weight: 400;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .preview-main span {
@@ -746,6 +815,131 @@ small {
   margin-top: 8px;
   display: flex;
   justify-content: flex-end;
+}
+
+.pick-panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 10px;
+}
+
+/* 銘柄の確定は右寄せ。終値更新・通信確認は常に横並び（狭画面の .button-row 100% 幅を上書き） */
+.pick-panel-actions .pick-confirm-row {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  margin-top: 0;
+}
+
+.pick-panel-actions .pick-confirm-row .btn {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: min(100%, 22rem);
+}
+
+.pick-panel-actions .pick-refresh-diag-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 8px;
+  /* 「銘柄の確定」と終値更新・通信確認のあいだに約1行ぶんの余白 */
+  margin-top: 0.85rem;
+}
+
+.pick-panel-actions .pick-refresh-diag-row .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  line-height: 1.25;
+}
+
+/* 銘柄選択パネル内の操作ボタン: .btn 既定(52px/1rem)を抑え、ビューポートに追従 */
+#pickPanel .button-row .btn {
+  min-height: clamp(34px, 2vw + 30px, 46px);
+  padding: clamp(0.28rem, 0.65vw + 0.12rem, 0.5rem) clamp(0.34rem, 1vw + 0.16rem, 0.68rem);
+  font-size: clamp(0.58rem, 0.75vw + 0.52rem, 0.88rem);
+  font-weight: 600;
+  line-height: 1.22;
+  box-sizing: border-box;
+}
+
+/* 終値更新・通信確認は一段コンパクトに */
+#pickPanel .pick-panel-actions .pick-refresh-diag-row .btn {
+  min-height: clamp(32px, 1.6vw + 28px, 42px);
+  padding: clamp(0.24rem, 0.5vw + 0.1rem, 0.44rem) clamp(0.3rem, 0.85vw + 0.14rem, 0.58rem);
+  font-size: clamp(0.54rem, 0.65vw + 0.48rem, 0.8rem);
+  font-weight: 600;
+}
+
+/* 銘柄セル2行目: コード + 市場（日本株／米国株／仮想通貨） */
+.pick-symbol-line {
+  display: block;
+  margin-top: 0.15em;
+  line-height: 1.45;
+  font-size: 0.88em;
+}
+
+.pick-market-inline {
+  color: #507172;
+  font-weight: 500;
+  white-space: normal;
+}
+
+#pickTable .pick-symbol-line .pick-symbol-code,
+#myTradeTable .pick-symbol-line .pick-symbol-code {
+  font-size: 1em;
+  font-weight: 500;
+}
+
+/* 銘柄一覧の銘柄名は太字にしない（銘柄コードはやや強調可） */
+#pickTable tbody td:nth-child(1) {
+  font-weight: 400;
+  color: #183f41;
+}
+
+/* 今月ランキング: 更新ボタンは左寄せ・内容幅（ラベルは下段で読みやすく） */
+.rank-refresh-toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.rank-refresh-toolbar .rank-refresh-btn {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: min(100%, 20rem);
+  min-height: 42px;
+  padding: 0.42rem 0.9rem;
+  font-size: clamp(0.78rem, 0.55vw + 0.68rem, 0.92rem);
+  font-weight: 650;
+  align-self: flex-start;
+}
+
+.rank-refresh-toolbar .rank-last-update-label {
+  margin: 0;
+  font-size: clamp(0.78rem, 0.45vw + 0.7rem, 0.88rem);
+  line-height: 1.45;
+  color: var(--muted);
+  max-width: 100%;
+}
+
+@media (min-width: 560px) {
+  .rank-refresh-toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+  }
+
+  .rank-refresh-toolbar .rank-last-update-label {
+    flex: 1 1 auto;
+    min-width: min(100%, 12rem);
+  }
 }
 
 .my-report {
@@ -769,28 +963,83 @@ small {
 }
 
 .my-report .table-wrap table {
-  /* 親幅を超えない（狭い2カラム・スマホで横はみ出し防止） */
   min-width: min(520px, 100%);
 }
 
-/* マイページ 取得単価・現在価格・売却価格は周囲と同じサイズ・通常の太さ */
+/* マイページ 取得単価・現在・売却価格列は周囲と同じサイズ・通常の太さ */
 .my-report .my-report-price-num {
   font-size: 0.89rem;
   font-weight: normal;
 }
 
-/* マイページ 銘柄名セル：2〜3行になってもよい、単語の途中で改行しない */
+/* マイページ 銘柄名セル：会社名は改行で全文表示、コード行に市場を併記 */
 .my-report .my-report-symbol-cell {
-  word-break: keep-all;
-  overflow-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-break: strict;
   white-space: normal;
-  max-width: 160px;
+  max-width: 100%;
+  vertical-align: top;
+  min-width: 0;
+  overflow: visible;
 }
 
-.account-setting-buttons {
+#myTradeTable td.my-report-symbol-cell .my-report-symbol-name {
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  font-weight: 400;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+#myTradeTable td.my-report-symbol-cell .pick-symbol-line {
+  display: block;
+  margin: 0;
+  margin-top: 0.12em;
+  font-size: 0.85em;
+}
+
+/* 取引履歴: 損益列は左寄せ（数値も見出しと縦ラインを揃える） */
+#myTradeTable thead th:nth-child(6),
+#myTradeTable tbody td:nth-child(6) {
+  text-align: left;
+}
+
+/* マイページ取引履歴: 注釈「（市場時間待ち）」は本文太字にしない */
+#myTradeTable .status-reason-line {
+  font-weight: 400;
+  opacity: 0.88;
+}
+
+/* マイページ: ID変更・パスワード・ログアウト・削除を1行（スマホ含む） */
+.account-quick-actions {
   display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 6px;
+  margin: 0 0 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.account-quick-actions .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: clamp(0.64rem, 0.9vw + 0.52rem, 0.82rem);
+  font-weight: 650;
+  padding: 0.4rem 0.3rem;
+  min-height: 40px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.account-quick-actions .account-delete-btn {
+  color: var(--danger);
 }
 
 .account-form-block {
@@ -802,14 +1051,7 @@ small {
   display: none;
 }
 
-/* マイページ: アカウント設定〜ログアウト〜削除の行間を同一（0.5rem）に */
-#accountPanel .account-setting-buttons {
-  margin-bottom: 0;
-}
 #accountPanel #accountMessage.inline-message:not(:empty) {
-  margin-top: 0.5rem;
-}
-#accountPanel #accountMessage ~ .button-row {
   margin-top: 0.5rem;
 }
 
@@ -901,7 +1143,7 @@ tbody tr:hover {
   font-weight: 700;
 }
 
-/* 銘柄追加画面の約定値・現在の株価（終値）は周囲と同じサイズ・通常の太さ */
+/* 銘柄追加画面の約定値・現在の株価列は周囲と同じサイズ・通常の太さ */
 #pickPanel .price-cell-num {
   font-size: 0.89rem;
   font-weight: normal;
@@ -910,7 +1152,7 @@ tbody tr:hover {
 .rank-symbols-cell {
   max-width: 260px; /* 「保有銘柄」列を広げる（取引詳細との見た目のバランス改善） */
   word-break: keep-all;
-  overflow-wrap: break-word;
+  overflow-wrap: normal;
   white-space: normal;
   /* 句読点の単独改行を抑える（ブラウザが対応する範囲で） */
   line-break: strict;
@@ -929,14 +1171,17 @@ tbody tr:hover {
 #historyTable td.rank-symbols-cell {
   font-family: var(--font-jp);
   font-weight: 400;
-  font-size: 0.9rem;
-  line-height: 1.65;
+  font-size: clamp(0.78rem, 0.35vw + 0.7rem, 0.9rem);
+  line-height: 1.6;
   color: #183f41;
   vertical-align: top;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "palt" 1;
   font-variant-east-asian: normal;
+  overflow-x: hidden;
+  overflow-y: visible;
+  min-width: 0;
 }
 
 #liveRankTable td.rank-symbols-cell *,
@@ -954,12 +1199,8 @@ tbody tr:hover {
   font-size: inherit;
   font-family: inherit;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  display: inline-block;
-  /* baseline だと英日混植で行ボックス内の見かけがズレやすい → 底辺基準で揃える */
-  vertical-align: bottom;
+  display: inline;
+  vertical-align: baseline;
 }
 
 .rank-holding-pending .rank-symbol-name,
@@ -968,7 +1209,8 @@ tbody tr:hover {
   font-weight: 400;
   font-family: inherit;
   color: inherit;
-  vertical-align: bottom;
+  vertical-align: baseline;
+  word-break: keep-all;
 }
 
 .market-label {
@@ -1040,24 +1282,36 @@ tbody tr:hover {
   min-width: 0;
 }
 
-/* 操作列: ⋮ を右端に寄せ、列幅は最小（保有銘柄列を広げる） */
-#liveRankTable th.col-menu,
-#liveRankTable td.col-menu,
-#historyTable th.col-menu,
-#historyTable td.col-menu {
-  width: 1.75rem;
-  min-width: 1.75rem;
-  max-width: 2rem;
+/* 操作列ヘッダー「操作」: 本文セルより広くし、全画面でも見切れない */
+#liveRankTable thead th.col-menu,
+#historyTable thead th.col-menu {
+  width: auto;
+  min-width: 3rem;
+  max-width: none;
   box-sizing: border-box;
-  padding-left: 2px;
-  padding-right: 2px;
+  padding-left: 8px;
+  padding-right: 8px;
+  overflow: visible;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 操作列セル: 詳細・⋮ を右寄せ、横幅はボタンに合わせる */
+#liveRankTable td.col-menu,
+#historyTable td.col-menu {
+  width: auto;
+  min-width: 4.75rem;
+  max-width: none;
+  box-sizing: border-box;
+  padding-left: 4px;
+  padding-right: 4px;
   overflow: visible;
   text-align: right;
 }
 
 #liveRankTable td.col-menu .rank-menu-wrap,
 #historyTable td.col-menu .rank-menu-wrap {
-  justify-content: flex-end;
+  justify-content: flex-start;
   width: 100%;
 }
 
@@ -1269,6 +1523,10 @@ tbody tr:hover {
 }
 .btn-confirm { font-weight: 700; }
 
+#pickPanel .button-row .btn.btn-confirm {
+  font-weight: 650;
+}
+
 .btn-add-done {
   color: var(--muted);
   background: #ffffff;
@@ -1292,43 +1550,103 @@ tbody tr:hover {
   display: none !important;
 }
 
-.rank-menu-wrap { position: relative; display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; justify-content: flex-end; max-width: 100%; }
+.rank-menu-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* ⋮ を押すと開く: 詳細＋通報を2列 */
+.rank-menu-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: 100%;
+  max-width: 12.5rem;
+  box-sizing: border-box;
+}
+
+.rank-menu-panel.hidden {
+  display: none !important;
+}
+
+.rank-menu-panel .rank-menu-detail-btn,
+.rank-menu-panel .rank-menu-report-btn,
+.rank-menu-panel .rank-menu-unreport-btn {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* 銘柄入力フォーム: 現在値確認・追加・戻るを常に1行（スマホ含む） */
+#symbolForm .pick-symbol-form-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: clamp(4px, 1.5vw, 10px);
+}
+
+#symbolForm .pick-symbol-form-row .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+#symbolForm .pick-symbol-form-row .btn.hidden {
+  display: none !important;
+}
 .rank-menu-detail-btn {
-  font-size: 0.78rem;
-  padding: 5px 10px;
+  font-size: clamp(0.64rem, 0.42vw + 0.55rem, 0.8rem);
+  padding: clamp(4px, 0.9vw, 7px) clamp(6px, 1.2vw, 10px);
   border: 1px solid #9cc9c7;
   background: linear-gradient(120deg, #e8f6f4, #d8eeec);
   color: #0a4f4d;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
+  min-height: clamp(32px, 7.5vw, 40px);
+  box-sizing: border-box;
 }
 .rank-menu-detail-btn:hover {
   filter: brightness(0.97);
 }
 .rank-menu-report-btn {
-  font-size: 0.78rem;
-  padding: 4px 8px;
+  font-size: clamp(0.62rem, 0.38vw + 0.53rem, 0.78rem);
+  padding: clamp(3px, 0.85vw, 6px) clamp(5px, 1.1vw, 9px);
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--danger);
   border-radius: var(--radius-sm);
   cursor: pointer;
   white-space: nowrap;
+  font-weight: 600;
+  min-height: clamp(32px, 7.5vw, 38px);
+  box-sizing: border-box;
 }
 .rank-menu-report-btn:hover { background: #fff0f2; }
 .rank-menu-report-btn.hidden { display: none; }
 .rank-menu-report-btn-hidden { display: none !important; }
 .rank-menu-unreport-btn {
-  font-size: 0.78rem;
-  padding: 4px 8px;
+  font-size: clamp(0.62rem, 0.38vw + 0.53rem, 0.78rem);
+  padding: clamp(3px, 0.85vw, 6px) clamp(5px, 1.1vw, 9px);
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--muted);
   border-radius: var(--radius-sm);
   cursor: pointer;
   white-space: nowrap;
+  font-weight: 600;
+  min-height: clamp(32px, 7.5vw, 38px);
+  box-sizing: border-box;
 }
 .rank-menu-unreport-btn:hover { background: #eef5f4; }
 .rank-menu-unreport-btn.hidden { display: none; }
@@ -1336,13 +1654,18 @@ tbody tr:hover {
   border: none;
   background: transparent;
   cursor: pointer;
-  padding: 2px 4px;
-  min-width: 1.35rem;
-  font-size: 1.1rem;
+  padding: clamp(2px, 0.6vw, 5px);
+  min-width: clamp(34px, 8vw, 44px);
+  min-height: clamp(34px, 8vw, 44px);
+  font-size: clamp(0.95rem, 2.4vw, 1.12rem);
   line-height: 1;
   color: var(--muted);
   border-radius: 4px;
   font-family: var(--font-jp), "Segoe UI Symbol", "Apple Symbols", sans-serif;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .rank-menu-trigger:hover { color: var(--text); background: rgba(0,0,0,0.06); }
 .rank-menu-dropdown {
@@ -1464,6 +1787,10 @@ tbody tr:hover {
   color: #0d8f8d;
   list-style: none;
   user-select: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.38;
 }
 .rank-trade-summary::-webkit-details-marker { display: none; }
 .rank-trade-inline-list {
@@ -1475,6 +1802,40 @@ tbody tr:hover {
   margin: 2px 0;
   line-height: 1.4;
 }
+
+/* 価格・状態・ランキング注記: 改行表示用（… で切らない） */
+.price-line-primary {
+  font-weight: 600;
+}
+.price-line-date {
+  font-size: 0.88em;
+  line-height: 1.35;
+  color: #4a6566;
+  opacity: 0.88;
+}
+.status-reason-line {
+  font-size: 0.9em;
+  font-weight: 650;
+  opacity: 0.9;
+  line-height: 1.38;
+}
+.rank-note--stacked {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  line-height: 1.38;
+  max-width: 100%;
+}
+.rank-note__line1 {
+  font-weight: 650;
+}
+.rank-note__line2 {
+  font-size: 0.92em;
+  opacity: 0.88;
+  line-height: 1.35;
+}
+
 .rank-trade-name {
   font-weight: 500;
   /* 銘柄名が長い場合は 1 行に収め、末尾を ... にする（右クリック詳細モーダルは別テーブルなので影響しにくい） */
@@ -1498,11 +1859,11 @@ tbody tr:hover {
 
 #historyMonthSelect {
   min-width: 240px;
-}
-
-#historyMonthSelect[size] {
-  height: 10.5rem;
-  overflow-y: auto;
+  min-height: 2.65em;
+  max-height: 2.85em;
+  padding: 0.2em 0.5em;
+  line-height: 1.45;
+  box-sizing: border-box;
 }
 
 .rank-live-title {
@@ -1524,6 +1885,15 @@ tbody tr:hover {
   color: #2c4f50;
   padding: 4px 8px;
   cursor: pointer;
+}
+
+/* 銘柄一覧の操作ボタン（売却・注文など）も画面幅に追従 */
+#pickPanel #pickTable .tiny-btn {
+  font-size: clamp(0.62rem, 0.55vw + 0.52rem, 0.78rem);
+  padding: clamp(3px, 0.75vw, 6px) clamp(5px, 1vw, 8px);
+  min-height: clamp(30px, 5.5vw + 22px, 38px);
+  box-sizing: border-box;
+  line-height: 1.2;
 }
 
 .tiny-btn:hover {
@@ -1655,10 +2025,19 @@ tbody tr:hover {
   box-sizing: border-box;
 }
 
-/* 保有銘柄: 読点は .rank-holding-pair 内の末尾（joinRankHoldingsHtmlChunks）で銘柄と一体に */
+/* 保有銘柄: 1 銘柄＝1 かたまり。はみ出しはセル内で …（スマホは下のメディアで 1 行 1 銘柄） */
 #liveRankTable td.rank-symbols-cell .rank-holding-pair,
 #historyTable td.rank-symbols-cell .rank-holding-pair {
-  display: inline;
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  vertical-align: baseline;
+  line-height: 1.55;
+  margin: 0 0 0.12em;
+  word-break: keep-all;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tiny-btn-warn {
@@ -1873,11 +2252,38 @@ tbody tr:hover {
   .preview-main {
     flex-wrap: wrap;
     align-items: flex-start;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  #pickPanel .preview-main strong,
+  #pickPanel #previewName {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  #pickPanel .preview-card {
+    min-width: 0;
+    max-width: 100%;
   }
 
   #pickPanel .pick-timing-note__txt {
     display: block;
     margin-top: 0.25rem;
+  }
+
+  /* 銘柄追加フォーム: 狭幅で子が親を押し広げない */
+  #pickPanel .field-grid,
+  #pickPanel .field-grid .field {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  #pickPanel #symbolForm {
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   body {
@@ -1920,6 +2326,45 @@ tbody tr:hover {
     min-height: 44px;
   }
 
+  /* ランキング「最新の順位を見る」は .button-row 外だが、念のため左寄せ・内容幅を固定 */
+  #liveRankCard .rank-refresh-toolbar .rank-refresh-btn {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: min(100%, 20rem);
+    min-height: clamp(38px, 9vw, 44px) !important;
+  }
+
+  /* 銘柄選択: 上書き（狭画面の button-row 全幅を打ち消す） */
+  .pick-panel-actions .pick-confirm-row .btn {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: min(100%, 22rem);
+  }
+
+  .pick-panel-actions .pick-refresh-diag-row .btn {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    width: auto !important;
+  }
+
+  /* 銘柄フォームのボタンは常に1行（.button-row の縦積みを打ち消す）。サイズは #pickPanel .button-row .btn の clamp に任せる */
+  #symbolForm .pick-symbol-form-row .btn {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    width: auto !important;
+    white-space: nowrap !important;
+  }
+
+  #accountPanel .account-quick-actions .btn {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    width: auto !important;
+    min-height: 36px !important;
+    font-size: clamp(0.54rem, 1.85vw + 0.42rem, 0.76rem) !important;
+    padding: 0.34rem 0.18rem !important;
+    white-space: nowrap !important;
+  }
+
   .suggest-item {
     min-height: 44px;
     padding: 10px 12px;
@@ -1937,11 +2382,15 @@ tbody tr:hover {
     overflow-x: hidden;
   }
 
-  /* D: 過去月セレクトが狭画面を圧迫しないよう全幅化 */
+  /* D: 過去月セレクトが狭画面を圧迫しないよう全幅化（高さはドロップダウン 1 行相当） */
   #historyMonthSelect {
     min-width: 0 !important;
     width: 100%;
     max-width: 100%;
+    min-height: 2.65em;
+    max-height: 2.85em;
+    padding: 0.25em 0.55em;
+    font-size: 16px;
   }
 
   .history-controls {
@@ -1955,78 +2404,308 @@ tbody tr:hover {
     min-width: 0 !important;
   }
 
-  /* 銘柄一覧は幅820px以下でカード化（このブロックではテーブル表示のまま） */
+  /* 銘柄一覧: スマホでも表構造は 1 行 6 列（親で横スクロール） */
   #pickPanel .table-wrap {
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     max-width: 100%;
   }
 
-  /* --- マイ取引：従来どおり縦スタックカード --- */
-  #myTradeTable {
-    min-width: 0 !important;
-    width: 100%;
-    table-layout: fixed;
+  #pickTable {
+    display: table;
+    width: max-content;
+    min-width: 100% !important;
+    table-layout: auto;
     border-collapse: separate;
     border-spacing: 0;
-  }
-
-  #myTradeTable thead {
-    display: none;
-  }
-
-  #myTradeTable tbody tr {
-    display: block;
-    margin-bottom: 12px;
-    padding: 10px 12px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
     box-sizing: border-box;
   }
 
-  #myTradeTable tbody tr.rank-table-empty {
-    padding: 12px 14px;
-    text-align: center;
+  #pickTable thead {
+    display: table-header-group;
   }
 
-  #myTradeTable tbody tr.rank-table-empty td {
-    text-align: center;
+  #pickTable tbody {
+    display: table-row-group;
   }
 
-  #myTradeTable th,
-  #myTradeTable td {
-    font-size: 0.85rem;
-    padding: 6px 0;
-    line-height: 1.35;
-    /* display:block では vertical-align は無効のため指定しない（リンター警告回避） */
-    display: block;
-    width: 100% !important;
-    min-width: 0 !important;
+  #pickTable thead tr,
+  #pickTable tbody tr.pick-row,
+  #pickTable tbody tr.pick-table-empty {
+    display: table-row;
+  }
+
+  #pickTable thead th,
+  #pickTable tbody tr.pick-row td,
+  #pickTable tbody tr.pick-table-empty td {
+    display: table-cell;
+    vertical-align: top;
+    padding: 8px 6px;
+    border: none;
+    box-sizing: border-box;
+  }
+
+  #pickTable thead th {
+    font-size: clamp(0.54rem, 0.7vw + 0.45rem, 0.72rem);
+    font-weight: 650;
+    line-height: 1.2;
+    color: #4d6e6f;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--line);
+  }
+
+  #pickTable thead th:nth-child(5),
+  #pickTable tbody tr.pick-row td:nth-child(5) {
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  #pickTable thead th:nth-child(6),
+  #pickTable tbody tr.pick-row td:nth-child(6) {
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  #pickTable thead th:nth-child(1),
+  #pickTable tbody tr.pick-row td:nth-child(1) {
+    min-width: 7.5rem;
+    max-width: 11rem;
+  }
+
+  #pickTable thead th:nth-child(2),
+  #pickTable tbody tr.pick-row td:nth-child(2) {
+    min-width: 4.5rem;
+  }
+
+  #pickTable thead th:nth-child(3),
+  #pickTable tbody tr.pick-row td:nth-child(3),
+  #pickTable thead th:nth-child(4),
+  #pickTable tbody tr.pick-row td:nth-child(4) {
+    min-width: 4.25rem;
+  }
+
+  #pickTable thead th:nth-child(5),
+  #pickTable tbody tr.pick-row td:nth-child(5) {
+    min-width: 2.75rem;
+  }
+
+  #pickTable thead th:nth-child(6),
+  #pickTable tbody tr.pick-row td:nth-child(6) {
+    min-width: 5.5rem;
+  }
+
+  #pickTable tbody tr.pick-table-empty td {
+    text-align: center;
+    padding: 14px 10px;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  #pickTable tbody tr.pick-row td {
+    font-size: clamp(0.58rem, 0.55vw + 0.52rem, 0.74rem);
+    line-height: 1.32;
     text-align: left;
     white-space: normal;
-    overflow: visible;
-    border: none;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    border-bottom: 1px solid rgba(18, 34, 40, 0.08);
+  }
+
+  #pickTable tbody tr.pick-row td:nth-child(1) {
+    font-weight: 400;
+    font-size: clamp(0.68rem, 1.8vw + 0.48rem, 0.86rem);
+    line-height: 1.35;
+  }
+
+  #pickTable tbody tr.pick-row td:nth-child(1) .pick-symbol-line {
+    white-space: normal;
     overflow-wrap: anywhere;
     word-break: break-word;
   }
 
-  #myTradeTable td::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    opacity: 0.78;
-    margin-bottom: 4px;
+  #pickTable tbody tr.pick-row td:nth-child(1) .pick-symbol-code {
+    word-break: break-all;
   }
 
-  #myTradeTable td[data-label=""]::before {
+  #pickTable tbody tr.pick-row td:nth-child(2) {
+    font-size: clamp(0.54rem, 2.35vw + 0.4rem, 0.71rem);
+    line-height: 1.22;
+  }
+
+  #pickTable tbody tr.pick-row td:nth-child(2) .status-reason-line {
+    font-weight: 400;
+    font-size: 0.94em;
+    opacity: 0.9;
+    line-height: 1.28;
+  }
+
+  #pickTable tbody tr.pick-row td:nth-child(3),
+  #pickTable tbody tr.pick-row td:nth-child(4) {
+    font-size: clamp(0.54rem, 1.9vw + 0.42rem, 0.7rem);
+    line-height: 1.24;
+  }
+
+  #pickTable tbody tr.pick-row td:nth-child(5) {
+    white-space: nowrap;
+  }
+
+  #pickTable tbody tr.pick-row td::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  #pickTable tbody tr.pick-row td[data-label=""]::before,
+  #pickTable tbody tr.pick-table-empty td[data-label=""]::before {
     content: none;
   }
 
-  #myTradeTable .my-report-symbol-cell {
-    max-width: none;
+  #pickTable tbody tr.pick-row td.pick-action-cell {
+    display: table-cell !important;
+  }
+
+  #pickTable tbody tr.pick-row td.pick-action-cell .tiny-btn {
+    width: auto;
+    min-width: 0;
+    min-height: clamp(32px, 5vw + 22px, 38px);
+    padding: clamp(3px, 0.75vw, 6px) clamp(4px, 1vw, 8px);
+    box-sizing: border-box;
+    font-size: clamp(0.58rem, 0.5vw + 0.5rem, 0.68rem);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    margin: 0 3px 0 0;
+    vertical-align: middle;
+  }
+
+  #pickTable tbody tr.pick-row td.pick-action-cell .tiny-btn:last-child {
+    margin-right: 0;
+  }
+
+  /* マイ取引: スマホでも 1 行 6 列の表（親で横スクロール） */
+  .my-report .table-wrap table {
+    width: max-content;
+    min-width: 100% !important;
+  }
+
+  #accountPanel .my-report .table-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  #myTradeTable {
+    display: table;
+    width: max-content;
+    min-width: 100% !important;
+    table-layout: auto;
+    border-collapse: separate;
+    border-spacing: 0;
+    box-sizing: border-box;
+  }
+
+  #myTradeTable thead {
+    display: table-header-group;
+  }
+
+  #myTradeTable tbody {
+    display: table-row-group;
+  }
+
+  #myTradeTable thead tr,
+  #myTradeTable tbody tr:not(.rank-table-empty),
+  #myTradeTable tbody tr.rank-table-empty {
+    display: table-row;
+  }
+
+  #myTradeTable thead th,
+  #myTradeTable tbody td {
+    display: table-cell;
+    vertical-align: top;
+    padding: 8px 6px;
+    border: none;
+    box-sizing: border-box;
+  }
+
+  #myTradeTable thead th {
+    font-size: clamp(0.54rem, 0.65vw + 0.46rem, 0.72rem);
+    font-weight: 650;
+    line-height: 1.2;
+    color: #456868;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid rgba(18, 61, 62, 0.14);
+  }
+
+  #myTradeTable thead th:nth-child(1),
+  #myTradeTable tbody tr:not(.rank-table-empty) td:nth-child(1) {
+    min-width: 7.25rem;
+    max-width: 11rem;
+  }
+
+  #myTradeTable thead th:nth-child(2),
+  #myTradeTable tbody tr:not(.rank-table-empty) td:nth-child(2) {
+    min-width: 4.25rem;
+  }
+
+  #myTradeTable thead th:nth-child(3),
+  #myTradeTable tbody tr:not(.rank-table-empty) td:nth-child(3),
+  #myTradeTable thead th:nth-child(4),
+  #myTradeTable tbody tr:not(.rank-table-empty) td:nth-child(4) {
+    min-width: 4.5rem;
+  }
+
+  #myTradeTable thead th:nth-child(5),
+  #myTradeTable tbody tr:not(.rank-table-empty) td:nth-child(5) {
+    min-width: 4.5rem;
+  }
+
+  #myTradeTable thead th:nth-child(6),
+  #myTradeTable tbody tr:not(.rank-table-empty) td:nth-child(6) {
+    min-width: 3rem;
+    text-align: left;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  #myTradeTable tbody tr:not(.rank-table-empty) td {
+    font-size: clamp(0.62rem, 0.5vw + 0.55rem, 0.76rem);
+    line-height: 1.35;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    border-bottom: 1px solid rgba(18, 61, 62, 0.1);
+  }
+
+  #myTradeTable tbody tr.rank-table-empty td {
+    text-align: center;
+    padding: 14px 10px;
+    border-bottom: 1px solid rgba(18, 61, 62, 0.1);
+  }
+
+  #myTradeTable tbody tr:not(.rank-table-empty) td.my-report-symbol-cell {
+    font-weight: 400;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    overflow: visible;
+  }
+
+  #myTradeTable tbody tr:not(.rank-table-empty) td.my-report-symbol-cell .my-report-symbol-name {
+    font-size: clamp(0.62rem, 1.7vw + 0.46rem, 0.86rem);
+  }
+
+  #myTradeTable tbody tr:not(.rank-table-empty) td.price-cell-num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  #myTradeTable tbody tr:not(.rank-table-empty) td::before {
+    content: none !important;
+    display: none !important;
   }
 
   /* --- ランキング・履歴：A カード内グリッド（1行目=順位+名前+上昇率） --- */
@@ -2041,7 +2720,81 @@ tbody tr:hover {
 
   #liveRankTable thead,
   #historyTable thead {
-    display: none;
+    display: block;
+  }
+
+  #liveRankTable thead tr,
+  #historyTable thead tr {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: 4px 6px;
+    padding: 4px 8px 6px;
+    margin: 0 0 4px;
+    border-bottom: 1px solid rgba(18, 61, 62, 0.14);
+    box-sizing: border-box;
+  }
+
+  #liveRankTable thead th,
+  #historyTable thead th {
+    flex: 0 0 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 0 2px;
+    font-size: clamp(0.52rem, 0.65vw + 0.44rem, 0.68rem);
+    font-weight: 650;
+    line-height: 1.15;
+    color: #4a6a6b;
+    text-align: center;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  #liveRankTable thead th:nth-child(1),
+  #historyTable thead th:nth-child(1) {
+    flex: 0 0 2.75rem;
+    max-width: 3rem;
+  }
+
+  #liveRankTable thead th:nth-child(2),
+  #historyTable thead th:nth-child(2) {
+    flex: 0 1 15%;
+    min-width: 3.25rem;
+    text-align: left;
+  }
+
+  #liveRankTable thead th:nth-child(3),
+  #historyTable thead th:nth-child(3) {
+    flex: 0 0 3.1rem;
+  }
+
+  #liveRankTable thead th:nth-child(4),
+  #historyTable thead th:nth-child(4) {
+    flex: 1 1 22%;
+    min-width: 4rem;
+    text-align: left;
+  }
+
+  #liveRankTable thead th:nth-child(5),
+  #historyTable thead th:nth-child(5) {
+    flex: 1 1 26%;
+    min-width: 4.25rem;
+    text-align: left;
+  }
+
+  #liveRankTable thead th:nth-child(6),
+  #historyTable thead th:nth-child(6),
+  #liveRankTable thead th.col-menu,
+  #historyTable thead th.col-menu {
+    flex: 0 0 auto;
+    min-width: 3.25rem;
+    max-width: none;
+    text-align: center;
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
   }
 
   #liveRankTable tbody tr.rank-table-empty,
@@ -2222,17 +2975,35 @@ tbody tr:hover {
 
   #liveRankTable tbody tr.rank-row td.rank-symbols-cell,
   #historyTable tbody tr.rank-row td.rank-symbols-cell {
-    max-height: 5.5rem;
+    max-width: none;
+    max-height: 7rem;
+    overflow-x: hidden !important;
     overflow-y: auto;
-    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    font-size: 0.85rem;
+    font-size: clamp(0.64rem, 2.2vw + 0.42rem, 0.84rem);
     font-weight: 400;
     font-family: var(--font-jp);
-    line-height: 1.65;
+    line-height: 1.5;
+    /* 親 td の overflow-wrap:anywhere を打ち消し、銘柄は .rank-holding-pair 単位 */
+    overflow-wrap: normal !important;
+    word-break: keep-all;
+    line-break: strict;
+    white-space: normal;
+    align-items: stretch;
+    min-width: 0;
     /* 親で display:block のため vertical-align は無効 */
     font-feature-settings: "palt" 1;
     padding-bottom: 2px;
+  }
+
+  /* スマホカード: 1 銘柄＝1 行（銘柄同士の改行が明確、セル外へはみ出さない） */
+  #liveRankTable tbody tr.rank-row td.rank-symbols-cell .rank-holding-pair,
+  #historyTable tbody tr.rank-row td.rank-symbols-cell .rank-holding-pair {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 0 0.2em;
+    line-height: 1.45;
   }
 
   #liveRankTable tbody tr.rank-row td:nth-child(5),
@@ -2252,43 +3023,41 @@ tbody tr:hover {
     text-align: left;
   }
 
-  /* C: 操作列をカード最下部・タップしやすく */
+  /* C: 操作列（カードレイアウト）— ⋮ の下に2列パネル */
   #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-wrap,
   #historyTable tbody tr.rank-row td.col-menu .rank-menu-wrap {
     width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
+    align-items: flex-end;
     justify-content: flex-start;
+    gap: 8px;
   }
 
-  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-detail-btn,
-  #historyTable tbody tr.rank-row td.col-menu .rank-menu-detail-btn {
-    flex: 1 1 100%;
-    min-height: 44px;
+  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-panel,
+  #historyTable tbody tr.rank-row td.col-menu .rank-menu-panel {
+    max-width: none;
+    gap: 8px;
+  }
+
+  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-detail-btn,
+  #historyTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-detail-btn,
+  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-report-btn:not(.hidden),
+  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-unreport-btn:not(.hidden),
+  #historyTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-report-btn:not(.hidden),
+  #historyTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-unreport-btn:not(.hidden) {
     text-align: center;
     line-height: 1.25;
     white-space: normal;
-  }
-
-  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-report-btn:not(.hidden),
-  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-unreport-btn:not(.hidden),
-  #historyTable tbody tr.rank-row td.col-menu .rank-menu-report-btn:not(.hidden),
-  #historyTable tbody tr.rank-row td.col-menu .rank-menu-unreport-btn:not(.hidden) {
-    flex: 1 1 calc(50% - 4px);
-    min-height: 44px;
-    white-space: normal;
-    text-align: center;
-    line-height: 1.25;
+    min-height: clamp(34px, 8.5vw, 42px);
+    font-size: clamp(0.62rem, 0.42vw + 0.54rem, 0.8rem);
+    padding: clamp(4px, 1vw, 7px) clamp(5px, 1.1vw, 9px);
   }
 
   #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-trigger,
   #historyTable tbody tr.rank-row td.col-menu .rank-menu-trigger {
-    min-width: 48px;
-    min-height: 48px;
+    min-width: clamp(36px, 9vw, 48px);
+    min-height: clamp(36px, 9vw, 48px);
     flex: 0 0 auto;
-    margin-left: auto;
+    align-self: flex-end;
   }
 
   /* カードレイアウト：順位セル内で縦横中央（中身 span.rank-no を中央に） */
@@ -2345,10 +3114,204 @@ tbody tr:hover {
     max-width: 100%;
   }
 
-  /* デスクトップ同様、メニュー列が切れないよう hidden にしない */
-  #liveRankCard .table-wrap,
-  #historyCard .table-wrap {
-    overflow-x: visible;
+  /* 今月・過去ランキング: 横スクロール */
+  #historyCard .table-wrap,
+  #liveRankCard .table-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 今月・過去ランキング: thead 列名と揃え、幅を flex で均等利用・文字は clamp で画面に追従 */
+  #liveRankTable tbody tr.rank-row,
+  #historyTable tbody tr.rank-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: clamp(3px, 1vw, 8px);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 8px 8px 10px;
+    margin-bottom: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #liveRankTable tbody tr.rank-row td,
+  #historyTable tbody tr.rank-row td {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    padding: 2px 3px;
+    font-size: clamp(0.67rem, 0.55vw + 0.57rem, 0.78rem);
+    line-height: 1.35;
+    max-height: none;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    min-width: 0;
+  }
+
+  #liveRankTable tbody tr.rank-row td:nth-child(1),
+  #historyTable tbody tr.rank-row td:nth-child(1) {
+    flex: 0 0 2.75rem;
+    max-width: 3rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-weight: 650;
+    align-self: flex-start;
+  }
+
+  #liveRankTable tbody tr.rank-row td:nth-child(2),
+  #historyTable tbody tr.rank-row td:nth-child(2) {
+    flex: 0 1 15%;
+    min-width: 3.25rem;
+    max-width: none;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  #liveRankTable tbody tr.rank-row td:nth-child(3),
+  #historyTable tbody tr.rank-row td:nth-child(3) {
+    flex: 0 0 3.1rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-weight: 700;
+    align-self: flex-start;
+  }
+
+  #liveRankTable tbody tr.rank-row td:nth-child(4),
+  #historyTable tbody tr.rank-row td:nth-child(4) {
+    flex: 1 1 22%;
+    min-width: 0;
+    max-width: 42%;
+    overflow-x: hidden;
+    overflow-y: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: normal;
+    word-break: keep-all;
+  }
+
+  #liveRankTable tbody tr.rank-row td:nth-child(5),
+  #historyTable tbody tr.rank-row td:nth-child(5) {
+    flex: 1 1 26%;
+    min-width: 4.25rem;
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  #liveRankTable tbody tr.rank-row td:nth-child(6),
+  #historyTable tbody tr.rank-row td:nth-child(6) {
+    flex: 0 0 auto;
+    min-width: 4.75rem;
+    max-width: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    align-self: flex-start;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    border-top: none;
+    padding-top: 2px;
+    margin-top: 0;
+  }
+
+  #liveRankTable tbody tr.rank-row td.rank-trade-col,
+  #historyTable tbody tr.rank-row td.rank-trade-col {
+    min-width: 0;
+  }
+
+  #liveRankTable tbody tr.rank-row td.rank-trade-col .rank-trade-details,
+  #historyTable tbody tr.rank-row td.rank-trade-col .rank-trade-details {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #liveRankTable tbody tr.rank-row td.rank-trade-col .rank-trade-summary,
+  #historyTable tbody tr.rank-row td.rank-trade-col .rank-trade-summary {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.38;
+  }
+
+  /* 列名は thead 表示のため、セル内 data-label は出さない */
+  #liveRankTable tbody tr.rank-row td::before,
+  #historyTable tbody tr.rank-row td::before {
+    content: none !important;
+    display: none !important;
+    margin: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #liveRankTable tbody tr.rank-row td.rank-account-cell,
+  #historyTable tbody tr.rank-row td.rank-account-cell {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  #liveRankTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n6,
+  #historyTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n6,
+  #liveRankTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n7,
+  #historyTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n7,
+  #liveRankTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n8,
+  #historyTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n8 {
+    font-size: clamp(0.67rem, 0.55vw + 0.57rem, 0.78rem);
+    line-height: 1.3;
+    letter-spacing: 0;
+    font-weight: 600;
+  }
+
+  #liveRankTable tbody tr.rank-row td.rank-account-cell .rank-account-cell__inner,
+  #historyTable tbody tr.rank-row td.rank-account-cell .rank-account-cell__inner {
+    align-self: stretch;
+    text-align: left;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  #liveRankTable tbody tr.rank-row td.rank-td,
+  #historyTable tbody tr.rank-row td.rank-td {
+    min-height: 0;
+    font-size: clamp(0.67rem, 0.55vw + 0.57rem, 0.78rem);
+    width: auto !important;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-wrap,
+  #historyTable tbody tr.rank-row td.col-menu .rank-menu-wrap {
+    gap: 4px;
+    align-items: flex-end;
+    justify-content: flex-start;
+  }
+
+  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-panel,
+  #historyTable tbody tr.rank-row td.col-menu .rank-menu-panel {
+    max-width: 100%;
+    gap: 4px;
   }
 
   .rank-holding-pending-label {
@@ -2372,103 +3335,10 @@ tbody tr:hover {
   }
 }
 
-/* 提案書: モバイルで1カラムに（見やすさ・高齢者配慮）＋銘柄一覧カード化 */
+/* 提案書: 狭い2カラムを1カラムに（銘柄表の横並びは max-width:1020px 側で統一） */
 @media (max-width: 820px) {
   .layout-grid.with-left {
     grid-template-columns: 1fr;
-  }
-
-  #pickPanel .table-wrap {
-    overflow-x: hidden;
-  }
-
-  #pickTable {
-    min-width: 0 !important;
-    width: 100%;
-    table-layout: fixed;
-    border-collapse: separate;
-    border-spacing: 0;
-  }
-
-  #pickTable thead {
-    display: none;
-  }
-
-  #pickTable tbody tr.pick-row,
-  #pickTable tbody tr.pick-table-empty {
-    display: block;
-    margin-bottom: 14px;
-    padding: 12px 14px;
-    border-radius: 14px;
-    background: linear-gradient(180deg, #ffffff 0%, #f7fcfb 100%);
-    border: 1px solid var(--line);
-    box-shadow: 0 4px 14px rgba(18, 34, 40, 0.06);
-    box-sizing: border-box;
-  }
-
-  #pickTable tbody tr.pick-table-empty td {
-    display: block;
-    width: 100% !important;
-    text-align: center;
-    border: none;
-    padding: 10px 4px;
-    font-size: 0.9rem;
-  }
-
-  #pickTable tbody tr.pick-row td {
-    display: block;
-    width: 100% !important;
-    min-width: 0 !important;
-    padding: 8px 0;
-    border: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    font-size: 0.9rem;
-    text-align: left;
-    white-space: normal;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-  }
-
-  #pickTable tbody tr.pick-row td:last-child {
-    border-bottom: none;
-    padding-top: 10px;
-  }
-
-  #pickTable tbody tr.pick-row td::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    color: var(--muted);
-    margin-bottom: 4px;
-  }
-
-  #pickTable tbody tr.pick-row td[data-label=""]::before,
-  #pickTable tbody tr.pick-table-empty td[data-label=""]::before {
-    content: none;
-  }
-
-  #pickTable tbody tr.pick-row td.pick-action-cell {
-    display: flex !important;
-    flex-direction: column;
-    gap: 8px;
-    align-items: stretch;
-  }
-
-  #pickTable tbody tr.pick-row td.pick-action-cell .tiny-btn {
-    width: 100%;
-    min-height: 44px;
-    box-sizing: border-box;
-    font-size: 0.88rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .rank-menu-detail-btn {
-    min-height: 40px;
-    padding: 6px 12px;
   }
 }
 

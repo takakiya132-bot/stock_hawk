@@ -4,7 +4,7 @@ const CONFIG = Object.freeze({
   storageKey: "stockgame_v1_state",
   schemaVersion: 2,
   jstTimeZone: "Asia/Tokyo",
-  /** 登録アカウント上限（1ブラウザ・ローカル保存）。Yahoo 負荷は「同時に操作する人数」よりキャッシュと制限が効く。100件は設計上問題なし。増やす場合は localStorage 容量（約5MB）と一覧描画の重さが上限。 */
+  /** ローカルモードの登録上限。Supabase 利用時は Edge の MAX_APP_USERS（既定 100）と表示・登録拒否を揃える。 */
   maxUsers: 100,
   // HTML/ルール表示が「最低1銘柄」になっているため揃える
   minPicks: 1,
@@ -63,6 +63,9 @@ const CONFIG = Object.freeze({
   clientRateSyncCopyMax: 12,
   /** Firebase 同期 pull の最短間隔（フォーカス連打で読み取り過多にならないように） */
   cloudPullMinIntervalMs: 10 * 1000,
+  /** 未ログイン向け ranking-snapshot のクライアント側スロットル（タブ復帰・可視化の連打対策。日4回の定時取得は別ルート） */
+  /* 可視タブの定期 pull でランキングを取り直す最短間隔（削除反映を遅らせないよう短め） */
+  publicRankingSnapshotMinIntervalMs: 2 * 60 * 1000,
   /** 同一クライアントからの Yahoo Finance（query1 / chart / search）への最短間隔（ms）。インタラクティブ時の短い gap でも負荷を抑える */
   yahooFinanceMinGapMs: 550,
   /** Yahoo 銘柄検索 API（v1/search）の連打制限（嫌がらせ・スキャン対策） */
@@ -362,7 +365,8 @@ const SYMBOL_PRESETS = [
   { symbol: "4005.T", market: "JP", name: "\u4f4f\u53cb\u5316\u5b66", aliases: ["4005", "sumitomo-chem"] },
   { symbol: "4188.T", market: "JP", name: "\u4e09\u83f1\u30b1\u30df\u30ab\u30eb", aliases: ["4188", "mitsubishi-chem"] },
   { symbol: "4208.T", market: "JP", name: "UBE", aliases: ["4208", "ube"] },
-  { symbol: "4452.T", market: "JP", name: "\u30ab\u30cd\u30ab", aliases: ["4452", "kaneka"] },
+  { symbol: "4118.T", market: "JP", name: "\u30ab\u30cd\u30ab", aliases: ["4118", "kaneka", "\u30ab\u30cd\u30ab"] },
+  { symbol: "4452.T", market: "JP", name: "\u82b1\u738b", aliases: ["4452", "kao", "\u82b1\u738b"] },
   { symbol: "4543.T", market: "JP", name: "\u30c6\u30eb\u30e2", aliases: ["4543", "terumo"] },
   { symbol: "4568.T", market: "JP", name: "\u7b2c\u4e09\u5171", aliases: ["4568", "daiichisankyo"] },
   { symbol: "4751.T", market: "JP", name: "\u30b5\u30a4\u30d0\u30fc\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8", aliases: ["4751", "cyberagent"] },
@@ -452,7 +456,8 @@ const QUICK_HINT_POOL_JP = [
   { symbol: "1925", name: "大和ハウス工業" }, { symbol: "1605", name: "INPEX" }, { symbol: "1332", name: "日本水産" },
   { symbol: "2282", name: "日本ハム" }, { symbol: "2502", name: "アサヒGHD" }, { symbol: "2503", name: "キリンHD" },
   { symbol: "3407", name: "旭化成" }, { symbol: "4004", name: "レゾナック" }, { symbol: "4005", name: "住友化学" },
-  { symbol: "4188", name: "三菱ケミカル" }, { symbol: "4208", name: "UBE" }, { symbol: "4452", name: "カネカ" },
+  { symbol: "4188", name: "三菱ケミカル" }, { symbol: "4208", name: "UBE" }, { symbol: "4118", name: "カネカ" },
+  { symbol: "4452", name: "花王" },
   { symbol: "4543", name: "テルモ" }, { symbol: "4568", name: "第一三共" }, { symbol: "4751", name: "サイバーエージェント" },
   { symbol: "4755", name: "楽天グループ" }, { symbol: "5020", name: "ENEOS HD" }, { symbol: "5108", name: "ブリヂストン" },
   { symbol: "5233", name: "太平洋セメント" }, { symbol: "5332", name: "TOTO" }, { symbol: "5401", name: "日本製鉄" },
@@ -992,8 +997,13 @@ const CLOUD_PUSH_DEBOUNCE_MS = 2800;
 let firebaseInitPromise = null;
 let cloudPushTimer = null;
 let supabaseCloudPushTimer = null;
+/** 連続保存で push が重なると古い payload が後から上書きする恐れがあるため直列化 */
+let firebaseCloudPushChain = Promise.resolve();
+let supabaseCloudPushChain = Promise.resolve();
 /** Firebase pull の最短間隔（フォーカス連打対策） */
 let lastCloudPullAttemptMs = 0;
+let lastPublicRankingSnapshotMs = 0;
+let lastPublicSnapshotScheduledKey = "";
 const loadedExternalScripts = new Set();
 
 function getFirebaseSyncConfig() {
@@ -1014,7 +1024,7 @@ function getFirebaseSyncConfig() {
  * Firebase 同期より優先される（同時に有効にしないこと）。
  *
  * デプロイ一覧:
- *   register, login, logout, reset-password, load-state, save-state, change-password, rename-account, delete-account
+ *   register, login, logout, reset-password, load-state, save-state, change-password, rename-account, delete-account, ranking-snapshot, account-stats
  * CORS: credentials: omit。Edge は Allow-Origin: *。
  * sb_publishable_* は JWT ではないため、verify_jwt が有効なとき Authorization に渡すと 401（Missing authorization / Invalid JWT）になる。anonKey（eyJ…）を別途渡す。
  * サーバーで app_users 削除時は API が code: SESSION_INVALID（401）を返し、クライアントはトークン破棄＋リモートユーザーをローカルから除去する。
@@ -1121,7 +1131,8 @@ function decodeSupabaseSessionSubUnverified(token) {
 
 function supabasePathSkipsStale401Handling(path) {
   const p = String(path || "").replace(/^\//, "");
-  return p === "login" || p === "register" || p === "reset-password";
+  return p === "login" || p === "register" || p === "reset-password" || p === "ranking-snapshot" ||
+    p === "account-stats";
 }
 
 /**
@@ -1244,6 +1255,69 @@ function assertSafeSupabaseEdgePath(path) {
     throw new Error("無効な API パスです。");
   }
   return p;
+}
+
+/** クラウド時は DB の登録件数（Edge `account-stats`）、非クラウド時はこの端末のローカル件数 */
+function updateAccountCountLabel() {
+  if (!app.els?.accountCountLabel) return;
+  const el = app.els.accountCountLabel;
+  const cloud = getSupabaseCloudConfig();
+  const maxShown = CONFIG.maxUsers;
+  if (cloud) {
+    const s = app._cloudAccountStats;
+    if (s && typeof s.registeredCount === "number" && typeof s.maxUsers === "number") {
+      el.textContent = `${s.registeredCount} / ${s.maxUsers}`;
+      el.removeAttribute("title");
+      return;
+    }
+    if (app._cloudAccountStatsLoading) {
+      el.textContent = `取得中… / ${maxShown}`;
+      el.removeAttribute("title");
+      return;
+    }
+    if (app._cloudAccountStatsError) {
+      el.textContent = `— / ${maxShown}`;
+      el.title =
+        "登録人数をサーバーから取得できませんでした。Supabase で Edge 関数 account-stats をデプロイし、ブラウザの開発者ツール（ネットワーク）で応答を確認してください。";
+      return;
+    }
+    el.textContent = `取得中… / ${maxShown}`;
+    el.removeAttribute("title");
+    return;
+  }
+  el.textContent = `${getActiveUsers().length} / ${maxShown}`;
+  el.removeAttribute("title");
+}
+
+async function refreshCloudAccountRegistrationStats() {
+  if (!getSupabaseCloudConfig()) {
+    app._cloudAccountStatsLoading = false;
+    app._cloudAccountStatsError = false;
+    updateAccountCountLabel();
+    return;
+  }
+  app._cloudAccountStatsLoading = true;
+  app._cloudAccountStatsError = false;
+  updateAccountCountLabel();
+  try {
+    const data = await supabaseCloudFetch("account-stats", { body: "{}" });
+    if (data?.ok && typeof data.registeredCount === "number" && typeof data.maxUsers === "number") {
+      app._cloudAccountStats = {
+        registeredCount: data.registeredCount,
+        maxUsers: data.maxUsers,
+        fetchedAtMs: Date.now(),
+      };
+      app._cloudAccountStatsError = false;
+    } else {
+      app._cloudAccountStatsError = true;
+    }
+  } catch (e) {
+    console.warn("account-stats fetch failed", e);
+    app._cloudAccountStatsError = true;
+  } finally {
+    app._cloudAccountStatsLoading = false;
+    updateAccountCountLabel();
+  }
 }
 
 async function supabaseCloudFetch(path, init = {}) {
@@ -1454,7 +1528,9 @@ function scheduleCloudPush() {
     if (cloudPushTimer) clearTimeout(cloudPushTimer);
     cloudPushTimer = setTimeout(() => {
       cloudPushTimer = null;
-      void pushCloudState();
+      firebaseCloudPushChain = firebaseCloudPushChain
+        .then(() => pushCloudState())
+        .catch((e) => console.warn("firebase cloud push failed", e));
     }, CLOUD_PUSH_DEBOUNCE_MS);
     return;
   }
@@ -1462,7 +1538,9 @@ function scheduleCloudPush() {
     if (supabaseCloudPushTimer) clearTimeout(supabaseCloudPushTimer);
     supabaseCloudPushTimer = setTimeout(() => {
       supabaseCloudPushTimer = null;
-      void pushSupabaseCloudState();
+      supabaseCloudPushChain = supabaseCloudPushChain
+        .then(() => pushSupabaseCloudState())
+        .catch((e) => console.warn("supabase cloud push failed", e));
     }, CLOUD_PUSH_DEBOUNCE_MS);
   }
 }
@@ -1487,13 +1565,150 @@ async function supabaseCloudPullIfNewer() {
     if (remoteMs > localMs) {
       app.state = normalizeState(remote);
       if (app.state.sessionUserId) app.sessionUserId = app.state.sessionUserId;
-      saveState();
+      /* いま取り込んだ内容をそのままサーバーへ再送しない（競合・無駄な負荷防止） */
+      saveState({ skipCloudPush: true });
       return true;
     }
   } catch (e) {
     console.warn("supabase cloud pull failed", e);
   }
   return false;
+}
+
+/**
+ * Edge ranking-snapshot の結果をローカル state にマージする。
+ * ログイン中の session ユーザーは除外（自分の行は load-state / ローカル編集を優先）。
+ * @returns {boolean} users または rankings を更新したら true
+ */
+function rankingSnapshotRowsSig(r) {
+  if (!r || typeof r !== "object") return "";
+  const rows = Array.isArray(r.rows) ? r.rows : [];
+  const ids = rows.map((x) => (x && x.userId) || "").join("\x1f");
+  return `${String(r.season || "")}\x1e${String(r.settledAt || "")}\x1e${rows.length}\x1e${ids}`;
+}
+
+function mergePublicRankingSnapshot(data) {
+  if (!data || !data.ok) return false;
+  const usersArr = Array.isArray(data.users) ? data.users : [];
+  const sessionId = app.sessionUserId || null;
+  const snapshotUserIds = new Set();
+  let changed = false;
+  const byId = new Map((app.state.users || []).map((u) => [u.id, u]));
+  for (const raw of usersArr) {
+    if (!raw || typeof raw !== "object" || typeof raw.id !== "string") continue;
+    if (raw.isDeleted) continue;
+    snapshotUserIds.add(raw.id);
+    if (sessionId && raw.id === sessionId) continue;
+    const nu = normalizeUser(raw);
+    if (!nu || !nu.id) continue;
+    const existing = byId.get(nu.id);
+    if (!existing) {
+      byId.set(nu.id, nu);
+      changed = true;
+      continue;
+    }
+    const nT = Date.parse(nu.updatedAt || "") || 0;
+    const eT = Date.parse(existing.updatedAt || "") || 0;
+    if (nT > eT) {
+      byId.set(nu.id, nu);
+      changed = true;
+    }
+  }
+  /* ranking-snapshot に含まれない remote ユーザーは DB から消えたとみなして除去（ライブランキング用） */
+  for (const [id, u] of [...byId.entries()]) {
+    if (sessionId && id === sessionId) continue;
+    if (!u || String(u.passwordAlgo || "") !== "remote") continue;
+    if (!snapshotUserIds.has(id)) {
+      byId.delete(id);
+      changed = true;
+    }
+  }
+  if (changed) {
+    app.state.users = [...byId.values()];
+  }
+
+  const remRank = Array.isArray(data.rankings) ? data.rankings : [];
+  if (remRank.length) {
+    const bySeason = new Map((app.state.rankings || []).map((r) => [r.season, r]));
+    let rChanged = false;
+    for (const raw of remRank) {
+      if (!raw || typeof raw !== "object" || typeof raw.season !== "string") continue;
+      const nr = normalizeRanking(raw);
+      const prev = bySeason.get(nr.season);
+      const prevN = prev && Array.isArray(prev.rows) ? prev.rows.length : 0;
+      const nextN = Array.isArray(nr.rows) ? nr.rows.length : 0;
+      const prevT = prev && prev.settledAt ? Date.parse(prev.settledAt) : 0;
+      const nextT = nr.settledAt ? Date.parse(nr.settledAt) : 0;
+      const sigPrev = prev ? rankingSnapshotRowsSig(prev) : "";
+      const sigNext = rankingSnapshotRowsSig(nr);
+      if (
+        !prev ||
+        nextN > prevN ||
+        nextN < prevN ||
+        (nextN === prevN && nextT > prevT) ||
+        sigPrev !== sigNext
+      ) {
+        bySeason.set(nr.season, nr);
+        rChanged = true;
+      }
+    }
+    if (rChanged) {
+      app.state.rankings = [...bySeason.values()].sort(
+        (a, b) => seasonToIndex(a.season) - seasonToIndex(b.season)
+      );
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+/**
+ * 未ログインでも他ブラウザの登録がランキングに載るよう、DB 上の全スナップショットをマージ取得。
+ * Yahoo は使わずサーバーの game_state のみ参照。
+ * @param {"boot"|"visible"|"scheduled"} reason
+ * @returns {Promise<boolean>}
+ */
+async function pullPublicRankingSnapshot(reason) {
+  if (!getSupabaseCloudConfig()) return false;
+  const now = Date.now();
+  const minMs = CONFIG.publicRankingSnapshotMinIntervalMs;
+  if (reason !== "boot" && reason !== "scheduled") {
+    if (lastPublicRankingSnapshotMs && now - lastPublicRankingSnapshotMs < minMs) return false;
+  }
+  try {
+    const data = await supabaseCloudFetch("ranking-snapshot", { body: "{}" });
+    if (!data || !data.ok) return false;
+    const changed = mergePublicRankingSnapshot(data);
+    lastPublicRankingSnapshotMs = Date.now();
+    if (changed) {
+      try {
+        saveState();
+      } catch (_) {}
+    }
+    return changed;
+  } catch (e) {
+    console.warn("ranking-snapshot failed", e);
+    return false;
+  }
+}
+
+/** 日本時間 0/6/12/18 時台に 1 回ずつ ranking-snapshot を取得（1 日最大 4 回） */
+function startPublicRankingSnapshotTimer() {
+  if (!getSupabaseCloudConfig() || app._publicRankingSnapTimerStarted) return;
+  app._publicRankingSnapTimerStarted = true;
+  const SLOTS = [0, 6, 12, 18, 21];
+  setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+    const p = getTimePartsByZone(new Date(), CONFIG.jstTimeZone);
+    if (p.minute !== 4) return;
+    if (!SLOTS.includes(p.hour)) return;
+    const key = `${p.year}-${p.month}-${p.day}-${p.hour}`;
+    if (key === lastPublicSnapshotScheduledKey) return;
+    lastPublicSnapshotScheduledKey = key;
+    void pullPublicRankingSnapshot("scheduled").then((applied) => {
+      if (applied && typeof renderAll === "function") renderAll();
+    });
+  }, 60 * 1000);
 }
 
 /** @returns {Promise<boolean>} リモートを取り込んで状態を更新したら true */
@@ -1552,11 +1767,16 @@ function startCloudSyncPullLoop() {
     if (!app.initialized || busy || document.visibilityState !== "visible") return;
     busy = true;
     try {
+      let needsRender = false;
       const applied = await cloudPullIfNewer();
-      if (applied) renderAll();
-      await rollSeasonIfNeeded();
-      renderAll();
-    } catch (_) {
+      if (applied) needsRender = true;
+      const pub = await pullPublicRankingSnapshot("visible");
+      if (pub) needsRender = true;
+      const seasonRolled = await rollSeasonIfNeeded();
+      if (seasonRolled) needsRender = true;
+      if (needsRender) renderAll();
+    } catch (e) {
+      console.warn("cloud sync pull loop failed", e);
     } finally {
       busy = false;
     }
@@ -1604,7 +1824,7 @@ function patchLoginChromeFromSession() {
   app.els.loginStatusLabel.textContent = user ? `ログイン中: ${getDisplayName(user)}` : "未ログイン";
   app.els.loginStatusLabel.classList.toggle("login-state-in", loggedIn);
   app.els.loginStatusLabel.classList.toggle("login-state-out", !loggedIn);
-  app.els.accountCountLabel.textContent = `${getActiveUsers().length} / ${CONFIG.maxUsers}`;
+  updateAccountCountLabel();
 }
 
 async function initializeApp() {
@@ -1616,10 +1836,16 @@ async function initializeApp() {
   app.sessionUserId = app.state.sessionUserId || null;
   patchLoginChromeFromSession();
   updateActionAvailability();
+  void refreshCloudAccountRegistrationStats();
   // company_master.json は初回描画を遅らせない。銘柄欄フォーカス・市場JP/AUTO・プレビュー等で遅延ロード。
 
   const pulled = await cloudPullIfNewer();
   if (pulled) {
+    patchLoginChromeFromSession();
+    updateActionAvailability();
+  }
+  const pubMerged = await pullPublicRankingSnapshot("boot");
+  if (pubMerged) {
     patchLoginChromeFromSession();
     updateActionAvailability();
   }
@@ -1642,6 +1868,7 @@ async function initializeApp() {
       startCryptoAutoUpdateTimers();
       startPendingAutoFixTimer();
       startCloudSyncPullLoop();
+      startPublicRankingSnapshotTimer();
     }
   } catch (error) {
     console.error(error);
@@ -2150,6 +2377,7 @@ function getElements() {
     authCardTitle: byId("authCardTitle"),
     authSubmitBtn: byId("authSubmitBtn"),
     switchAuthModeBtn: byId("switchAuthModeBtn"),
+    authLoginSecondaryRow: byId("authLoginSecondaryRow"),
     passwordConfirmField: byId("passwordConfirmField"),
     authPasswordConfirm: byId("authPasswordConfirm"),
     authRecoveryField: byId("authRecoveryField"),
@@ -2165,6 +2393,7 @@ function getElements() {
     globalNotice: byId("globalNotice"),
     authForm: byId("authForm"),
     authName: byId("authName"),
+    authNameHintRegister: byId("authNameHintRegister"),
     authPassword: byId("authPassword"),
     authPasswordToggle: byId("authPasswordToggle"),
     authPasswordConfirm: byId("authPasswordConfirm"),
@@ -2493,6 +2722,7 @@ function onMenuRegister() {
   syncAuthMode("register");
   setCurrentView("auth");
   renderAll();
+  void refreshCloudAccountRegistrationStats();
 }
 
 function onMenuPick() {
@@ -2638,7 +2868,7 @@ function confirmLeavePickView(nextView) {
     "銘柄が確定されておりません。変更内容は削除されます。\n\n移動しますか？\n（OK＝移動する／キャンセル＝とどまる）"
   );
   if (!ok) {
-    setMessage(app.els.pickMessage, "銘柄を決定してから移動するか、キャンセルでこの画面に残ります。", true);
+    setMessage(app.els.pickMessage, "銘柄の確定をしてから移動するか、キャンセルでこの画面に残ります。", true);
     return false;
   }
   discardPickDraft(user);
@@ -2658,21 +2888,25 @@ function syncAuthMode(mode) {
   const isRegister = safe === "register";
   app.els.authCardTitle.textContent = isReset
     ? "パスワードを忘れたとき"
-    : (isRegister ? "新規登録" : "はじめる");
+    : (isRegister ? "新規登録" : "ログイン");
   app.els.authForm.classList.toggle("hidden", isReset);
   app.els.resetForm.classList.toggle("hidden", !isReset);
   app.els.passwordConfirmField.classList.toggle("hidden", !isRegister);
   app.els.authRecoveryField.classList.toggle("hidden", !isRegister);
   if (app.els.registerTrialNotice) app.els.registerTrialNotice.classList.toggle("hidden", !isRegister);
   app.els.registerCountInfo.classList.toggle("hidden", !isRegister);
+  if (app.els.authNameHintRegister) {
+    app.els.authNameHintRegister.classList.toggle("hidden", !isRegister || isReset);
+  }
   app.els.authSubmitBtn.textContent = isRegister ? "新規作成" : "ログイン";
   app.els.switchAuthModeBtn.textContent = isRegister ? "ログインへ" : "新規登録へ";
-  app.els.switchAuthModeBtn.classList.toggle("hidden", isReset || isRegister);
+  if (app.els.authLoginSecondaryRow) {
+    app.els.authLoginSecondaryRow.classList.toggle("hidden", isReset || isRegister);
+  }
   if (isRegister && app.els.authRecoveryQuestion) {
     app.els.authRecoveryQuestion.value = "BIRTH_CITY";
     syncRecoveryAnswerHints();
   }
-  app.els.toggleResetBtn.classList.toggle("hidden", isReset || isRegister);
   app.els.authPasswordConfirm.required = isRegister;
   if (app.els.authRecoveryQuestion) app.els.authRecoveryQuestion.required = isRegister;
   if (app.els.authRecoveryAnswer) app.els.authRecoveryAnswer.required = isRegister;
@@ -2734,7 +2968,7 @@ function renderAll() {
   app.els.loginStatusLabel.classList.toggle("login-state-in", loggedIn);
   app.els.loginStatusLabel.classList.toggle("login-state-out", !loggedIn);
   app.els.topLogoutBtn.classList.toggle("hidden", !loggedIn);
-  app.els.accountCountLabel.textContent = `${getActiveUsers().length} / ${CONFIG.maxUsers}`;
+  updateAccountCountLabel();
   syncAuthMode(app.authMode);
 
   renderAuthPanels();
@@ -2807,7 +3041,7 @@ function renderMonthlyResult(user) {
   const season = app.state.currentSeason || getSeasonKeyJst(new Date());
   const score = calcUserScore(user, "latest", season);
   if (!score) {
-    block.innerHTML = `<p class="monthly-result-label">今月のリターン</p><p class="monthly-result-value monthly-result-none">${CONFIG.minPicks > 0 ? `対象銘柄が不足しています（${CONFIG.minPicks}銘柄以上で確定が必要です）。` : "銘柄を追加するとリターンが算出されます。0銘柄のままでも確定できます。"}</p>`;
+    block.innerHTML = `<p class="monthly-result-label">今月のリターン</p><p class="monthly-result-value monthly-result-none">${CONFIG.minPicks > 0 ? `対象銘柄が不足しています（${CONFIG.minPicks}銘柄以上で確定が必要です）` : "銘柄を追加するとリターンが算出されます。0銘柄のままでも確定できます。"}</p>`;
     return;
   }
   const pctClass = score.returnPct > 0 ? "pct-up" : score.returnPct < 0 ? "pct-down" : "pct-flat";
@@ -2823,18 +3057,18 @@ function renderPickTable() {
   body.innerHTML = "";
 
   if (!user) {
-    body.innerHTML = `<tr class="pick-table-empty"><td colspan="7" data-label="">はじめるか、銘柄を選ぶか、ランキングを表示してください。</td></tr>`;
+    body.innerHTML = `<tr class="pick-table-empty"><td colspan="6" data-label="">はじめるか、銘柄を選ぶか、ランキングを表示してください。</td></tr>`;
     return;
   }
 
   const picks = user.picks || [];
   const openPicks = picks.filter((p) => p.status !== "CLOSED");
   if (!openPicks.length && !picks.length) {
-    body.innerHTML = `<tr class="pick-table-empty"><td colspan="7" data-label="">銘柄を追加するか、${CONFIG.minPicks}〜${CONFIG.maxPicks}銘柄で確定してください。</td></tr>`;
+    body.innerHTML = `<tr class="pick-table-empty"><td colspan="6" data-label="">銘柄を追加するか、${CONFIG.minPicks}〜${CONFIG.maxPicks}銘柄で確定してください。</td></tr>`;
     return;
   }
   if (!openPicks.length) {
-    body.innerHTML = `<tr class="pick-table-empty"><td colspan="7" data-label="">今月の保有銘柄はありません。銘柄を追加してください。</td></tr>`;
+    body.innerHTML = `<tr class="pick-table-empty"><td colspan="6" data-label="">今月の保有銘柄はありません。銘柄を追加してください。</td></tr>`;
     return;
   }
 
@@ -2844,13 +3078,7 @@ function renderPickTable() {
 
     const pct = computePickPct(pick);
     const pctClass = pct == null ? "pct-flat" : pct > 0 ? "pct-up" : pct < 0 ? "pct-down" : "pct-flat";
-    let statusText = pickStatusLabel(pick);
-    if (pick.entryPending && isLongPending(pick.orderDate)) {
-      statusText += ' <small class="section-note">（3日以上未約定）</small>';
-    }
-    if (pick.sellPending && pick.sellOrderDate && isLongPending(pick.sellOrderDate)) {
-      statusText += ' <small class="section-note">（3日以上未約定）</small>';
-    }
+    const statusHtml = formatPickStatusCellHtml(pick);
     const statusClass = pick.status === "CLOSED"
       ? "status-closed"
       : pick.sellPending
@@ -2858,14 +3086,16 @@ function renderPickTable() {
         : pick.entryPending
           ? "status-entry-wait"
           : "status-holding";
-    const entryText = pick.entryPrice != null
-      ? `${formatPrice(pick.entryPrice, pick.market)} (${pick.entryDate || "-"})`
-      : "約定待ち";
+    const entryText =
+      pick.entryPrice != null
+        ? formatPriceDateStackHtml(pick.entryPrice, pick.market, pick.entryDate, null)
+        : escapeHtml("約定待ち");
     const latestRefPrice = pick.status === "CLOSED" ? pick.exitPrice : pick.latestPrice;
     const latestRefDate = pick.status === "CLOSED" ? pick.exitDate : pick.latestDate;
-    const latestText = latestRefPrice != null
-      ? `${formatPrice(latestRefPrice, pick.market)} (${latestRefDate || "-"})`
-      : "-";
+    const latestText =
+      latestRefPrice != null
+        ? formatPriceDateStackHtml(latestRefPrice, pick.market, latestRefDate, null)
+        : `<span class="price-line-primary">-</span>`;
     const canSell = !pick.entryPending && pick.status !== "CLOSED";
     // 売却予約中は削除不可（取消は「売却取消」のみ。未約定買いのみ削除可）
     const canRemove = pick.entryPending;
@@ -2877,12 +3107,13 @@ function renderPickTable() {
       ? `<button class="tiny-btn" data-action="remove" data-pick-id="${pickIdSafe}" type="button">削除</button>`
       : "";
 
+    const symEsc = escapeHtml(pick.symbol || "");
+    const mktEsc = escapeHtml(marketLabel(pick.market));
     tr.innerHTML = `
-      <td data-label="銘柄">${escapeHtml(resolvePickDisplayName(pick))}<br><small class="pick-symbol-code">${escapeHtml(pick.symbol)}</small></td>
-      <td data-label="市場"><span class="market-label">${escapeHtml(marketLabel(pick.market))}</span></td>
-      <td data-label="状態" class="${statusClass}">${statusText}</td>
+      <td data-label="銘柄">${escapeHtml(resolvePickDisplayName(pick))}<br><small class="pick-symbol-line"><span class="pick-symbol-code">${symEsc}</span><span class="pick-market-inline"> ${mktEsc}</span></small></td>
+      <td data-label="状態" class="${statusClass}">${statusHtml}</td>
       <td data-label="約定値" class="price-cell-num">${entryText}</td>
-      <td data-label="現在の株価（終値）" class="price-cell-num">${latestText}</td>
+      <td data-label="現在の株価" class="price-cell-num">${latestText}</td>
       <td data-label="騰落率" class="${pctClass}">${pct == null ? "-" : formatPct(pct)}</td>
       <td data-label="操作" class="pick-action-cell">
         ${sellBtn}
@@ -2901,14 +3132,14 @@ function renderPickConfirmState() {
   }
 
   if (user.needsPickConfirm) {
-    app.els.pickConfirmState.textContent = "銘柄が未確定です。移動前に「銘柄を決定」を押してください。";
+    app.els.pickConfirmState.textContent = "銘柄が未確定です。移動前に「銘柄の確定」を押してください。";
     return;
   }
 
   const openPicks = (user.picks || []).filter((p) => p.status !== "CLOSED");
   const pendingCount = openPicks.filter((p) => p.entryPending).length;
   if (pendingCount > 0) {
-    app.els.pickConfirmState.textContent = `買い注文中: ${pendingCount}銘柄が約定待ちです。約定後に騰落率へ反映されます。`;
+    app.els.pickConfirmState.textContent = `買い注文中: ${pendingCount}銘柄が約定待ちです。`;
     return;
   }
 
@@ -2917,7 +3148,7 @@ function renderPickConfirmState() {
     return;
   }
 
-  app.els.pickConfirmState.textContent = "銘柄を追加したら「銘柄を決定」を押してください。";
+  app.els.pickConfirmState.textContent = "銘柄を追加したら「銘柄の確定」を押してください。";
 }
 
 function renderApiDiagMessage() {
@@ -2928,7 +3159,7 @@ function renderApiDiagMessage() {
   if (!app.lastApiFailure) {
     box.classList.remove("hidden");
     box.classList.add("success");
-    box.textContent = "通信: 正常（Yahoo / フォールバック）";
+    box.textContent = "通信: 正常";
     return;
   }
 
@@ -2954,6 +3185,49 @@ function pickStatusLabel(pick) {
     return "買い注文中" + reason;
   }
   return "保有中";
+}
+
+/** 価格＋日付を2行に分け、狭い幅でも … に切らない（銘柄選択・マイ取引） */
+function formatPriceDateStackHtml(price, market, date, pendingLabel) {
+  if (price == null) {
+    const pl = pendingLabel != null && pendingLabel !== "" ? String(pendingLabel) : "";
+    return pl ? escapeHtml(pl) : `<span class="price-line-primary">-</span>`;
+  }
+  const p = formatPrice(price, market);
+  const d = date != null && String(date).trim() && String(date).trim() !== "-" ? String(date).trim() : "";
+  const primary = `<span class="price-line-primary">${escapeHtml(p)}</span>`;
+  if (!d) return primary;
+  return `${primary}<br><span class="price-line-date">(${escapeHtml(d)})</span>`;
+}
+
+/** 状態セル: 「買い注文中」と「（市場時間待ち）」を改行（銘柄選択・マイ取引） */
+function formatPickStatusCellHtml(pick) {
+  const longNote =
+    pick.entryPending && isLongPending(pick.orderDate)
+      ? ' <small class="section-note">（3日以上未約定）</small>'
+      : pick.sellPending && pick.sellOrderDate && isLongPending(pick.sellOrderDate)
+        ? ' <small class="section-note">（3日以上未約定）</small>'
+        : "";
+  if (pick.status === "CLOSED") {
+    return escapeHtml("売却済") + longNote;
+  }
+  if (pick.sellPending) {
+    const reason = pick.sellPendingReason ? getPendingReasonLabel(pick.sellPendingReason) : "";
+    const main = escapeHtml("売り注文中");
+    const sub = reason
+      ? `<br><span class="status-reason-line">（${escapeHtml(reason)}）</span>`
+      : "";
+    return `<span class="status-stack">${main}${sub}</span>${longNote}`;
+  }
+  if (pick.entryPending) {
+    const reason = pick.entryPendingReason ? getPendingReasonLabel(pick.entryPendingReason) : "";
+    const main = escapeHtml("買い注文中");
+    const sub = reason
+      ? `<br><span class="status-reason-line">（${escapeHtml(reason)}）</span>`
+      : "";
+    return `<span class="status-stack">${main}${sub}</span>${longNote}`;
+  }
+  return escapeHtml("保有中") + longNote;
 }
 
 function renderMyTradeReport() {
@@ -2983,19 +3257,29 @@ function renderMyTradeReport() {
   for (const pick of picks) {
     const pct = computePickPct(pick);
     const pctClass = pct == null ? "pct-flat" : pct > 0 ? "pct-up" : pct < 0 ? "pct-down" : "pct-flat";
-    const statusOrSellDate = pick.status === "CLOSED" ? (pick.exitDate || "-") : pickStatusLabel(pick);
+    const statusOrSellDateHtml =
+      pick.status === "CLOSED"
+        ? escapeHtml(pick.exitDate || "-")
+        : formatPickStatusCellHtml(pick);
     const entryPriceText = pick.entryPrice != null ? formatPrice(pick.entryPrice, pick.market) : "約定待ち";
-    const currentOrExitPrice = pick.status === "CLOSED"
-      ? (pick.exitPrice != null ? formatPrice(pick.exitPrice, pick.market) : "-")
-      : (pick.latestPrice != null ? formatPrice(pick.latestPrice, pick.market) : "-");
+    const currentOrExitPriceHtml =
+      pick.status === "CLOSED"
+        ? (pick.exitPrice != null
+          ? formatPriceDateStackHtml(pick.exitPrice, pick.market, pick.exitDate, null)
+          : `<span class="price-line-primary">-</span>`)
+        : (pick.latestPrice != null
+          ? formatPriceDateStackHtml(pick.latestPrice, pick.market, pick.latestDate, null)
+          : `<span class="price-line-primary">-</span>`);
     const symbolDisplayName = resolvePickDisplayName(pick);
+    const symEsc = escapeHtml(pick.symbol || "");
+    const mktEsc = escapeHtml(marketLabel(pick.market));
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td class="my-report-symbol-cell" data-label="銘柄">${escapeHtml(symbolDisplayName)}</td>
+      <td class="my-report-symbol-cell" data-label="銘柄"><span class="my-report-symbol-name" title="${escapeHtml(symbolDisplayName)}">${escapeHtml(symbolDisplayName)}</span><small class="pick-symbol-line"><span class="pick-symbol-code">${symEsc}</span><span class="pick-market-inline"> ${mktEsc}</span></small></td>
       <td data-label="買付日">${escapeHtml(pick.entryDate || pick.orderDate || "-")}</td>
       <td class="price-cell-num my-report-price-num" data-label="取得単価">${escapeHtml(entryPriceText)}</td>
-      <td class="price-cell-num my-report-price-num" data-label="現在価格・売却価格">${escapeHtml(currentOrExitPrice)}</td>
-      <td data-label="状態／売却日">${escapeHtml(statusOrSellDate)}</td>
+      <td class="price-cell-num my-report-price-num" data-label="現在・売却価格">${currentOrExitPriceHtml}</td>
+      <td data-label="状態／売却日">${statusOrSellDateHtml}</td>
       <td class="${pctClass}" data-label="損益">${pct == null ? "-" : formatPct(pct)}</td>
     `;
     body.appendChild(tr);
@@ -3045,7 +3329,8 @@ function buildLiveRankingSnapshotKey(ranking, season, currentUser) {
       r.isAnonymized ? "1" : "0",
       hasReportedByMe ? "1" : "0",
       tradeSig,
-      r.note || ""
+      r.note || "",
+      r.pendingOrderCount != null ? String(r.pendingOrderCount) : ""
     ].join("\x1e");
   });
   return `LRv9|${season}|m${currentUser ? "1" : "0"}\n${lines.join("\n")}`;
@@ -3082,7 +3367,7 @@ function renderRankMenuCell(row, seasonKey, currentUser) {
   );
   const reportBtnClass = "rank-menu-report-btn hidden" + (hasReportedByMe ? " rank-menu-report-btn-hidden" : "");
   const unreportBtnClass = "rank-menu-unreport-btn hidden" + (!hasReportedByMe ? " rank-menu-report-btn-hidden" : "");
-  return `<td class="col-menu" data-label="操作"><span class="rank-menu-wrap"><button type="button" class="rank-menu-detail-btn" data-action="open-rank-report">詳細</button><button type="button" class="${reportBtnClass}" data-action="report-rank" data-user-id="${escapeHtml(row.userId)}">通報する</button><button type="button" class="${unreportBtnClass}" data-action="unreport-rank" data-user-id="${escapeHtml(row.userId)}">通報を解除</button><button type="button" class="rank-menu-trigger" data-user-id="${escapeHtml(row.userId)}" aria-label="メニューを開く">\u22EE</button><div class="rank-menu-dropdown hidden"></div></span></td>`;
+  return `<td class="col-menu" data-label="操作"><span class="rank-menu-wrap"><button type="button" class="rank-menu-trigger" data-user-id="${escapeHtml(row.userId)}" aria-label="メニューを開く">\u22EE</button><div class="rank-menu-panel hidden"><button type="button" class="rank-menu-detail-btn" data-action="open-rank-report">詳細</button><button type="button" class="${reportBtnClass}" data-action="report-rank" data-user-id="${escapeHtml(row.userId)}">通報する</button><button type="button" class="${unreportBtnClass}" data-action="unreport-rank" data-user-id="${escapeHtml(row.userId)}">通報を解除</button></div></span></td>`;
 }
 
 function renderLiveRanking() {
@@ -3124,7 +3409,9 @@ function renderLiveRanking() {
       : escapeHtml(row.displayName);
     const tradesCell = row.trades.length
       ? renderTradeDetails(row.trades)
-      : `<span class="rank-note">${escapeHtml(row.note || "未取引・未確定")}</span>`;
+      : row.pendingOrderCount != null && row.pendingOrderCount > 0
+        ? `<span class="rank-note rank-note--stacked"><span class="rank-note__line1">注文中</span><span class="rank-note__line2">${escapeHtml(`（${row.pendingOrderCount}銘柄が約定待ち）`)}</span></span>`
+        : `<span class="rank-note">${escapeHtml(row.note || "未取引・未確定")}</span>`;
     const menuCell = renderRankMenuCell(row, season, currentUser);
     const rankBadge = displayRank ? renderRankBadge(displayRank) : "";
     const accountLenClass = rankAccountCellLenClass(row.displayName);
@@ -3133,7 +3420,7 @@ function renderLiveRanking() {
       <td class="rank-account-cell ${accountLenClass}${row.isAnonymized ? " rank-account-cell--anon" : ""}" data-label="アカウント名"><span class="rank-account-cell__inner">${accountHtml}</span></td>
       <td class="${pctClass}" data-label="上昇率"><span class="rank-pct-cell__inner">${pctText}</span></td>
       <td class="rank-symbols-cell" data-label="保有銘柄">${row.symbolsHtml != null ? row.symbolsHtml : escapeHtml(row.symbolsText || "-")}</td>
-      <td data-label="取引のくわしい内容">${tradesCell}</td>
+      <td class="rank-trade-col" data-label="取引内容">${tradesCell}</td>
       ${menuCell}
     `;
     tr.dataset.userId = row.userId || "";
@@ -3213,7 +3500,7 @@ function renderHistoryTable() {
       <td class="rank-account-cell ${accountLenClass}${row.isAnonymized ? " rank-account-cell--anon" : ""}" data-label="アカウント名"><span class="rank-account-cell__inner">${accountHtml}</span></td>
       <td class="${pctClass}" data-label="上昇率"><span class="rank-pct-cell__inner">${formatPct(row.returnPct)}</span></td>
       <td class="rank-symbols-cell" data-label="保有銘柄">${historySymbolsHtml}</td>
-      <td data-label="取引のくわしい内容">${renderTradeDetails(row.trades || [])}</td>
+      <td class="rank-trade-col" data-label="取引内容">${renderTradeDetails(row.trades || [])}</td>
       ${menuCell}
     `;
     tr.dataset.userId = row.userId || "";
@@ -3477,6 +3764,7 @@ function closeIntroModal() {
     syncAuthMode("register");
   }
   renderAll();
+  if (app.authMode === "register") void refreshCloudAccountRegistrationStats();
 }
 
 function onSwitchAuthMode() {
@@ -3490,6 +3778,7 @@ function onSwitchAuthMode() {
   }
   syncAuthMode(app.authMode === "register" ? "login" : "register");
   renderAll();
+  if (app.authMode === "register") void refreshCloudAccountRegistrationStats();
 }
 
 function onToggleResetForm() {
@@ -3953,6 +4242,7 @@ async function onDeleteAccountClick() {
   showPreview(null);
   setCurrentView("ranking");
   renderAll();
+  if (getSupabaseCloudConfig()) void refreshCloudAccountRegistrationStats();
   showGlobalNotice(doneMsg, !serverDeleted);
 }
 
@@ -4633,6 +4923,16 @@ function rankReportTradesTooLarge(row) {
   return n >= 7;
 }
 
+function closeAllRankMenuPanels() {
+  document.querySelectorAll(".rank-menu-panel").forEach((el) => el.classList.add("hidden"));
+  document.querySelectorAll(".rank-menu-report-btn, .rank-menu-unreport-btn").forEach((el) => el.classList.add("hidden"));
+  document.querySelectorAll(".rank-menu-dropdown").forEach((el) => el.classList.add("hidden"));
+  if (app.rankMenuAutoCloseTimer) {
+    clearTimeout(app.rankMenuAutoCloseTimer);
+    app.rankMenuAutoCloseTimer = 0;
+  }
+}
+
 function onLiveRankBodyClick(event) {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
@@ -4640,6 +4940,7 @@ function onLiveRankBodyClick(event) {
   if (openBtn instanceof HTMLButtonElement) {
     event.preventDefault();
     event.stopPropagation();
+    closeAllRankMenuPanels();
     const body = event.currentTarget;
     const tr = openBtn.closest("tr");
     if (!tr) return;
@@ -4665,29 +4966,28 @@ function onLiveRankBodyClick(event) {
   if (trigger instanceof HTMLButtonElement) {
     event.stopPropagation();
     const wrap = trigger.closest(".rank-menu-wrap");
-    const dropdown = wrap?.querySelector(".rank-menu-dropdown");
+    const panel = wrap?.querySelector(".rank-menu-panel");
     const menuBtns = wrap?.querySelectorAll(".rank-menu-report-btn, .rank-menu-unreport-btn");
-    const anyVisible = menuBtns && [...menuBtns].some((el) => !el.classList.contains("hidden"));
+    const wasOpen = Boolean(panel && !panel.classList.contains("hidden"));
     document.querySelectorAll(".rank-menu-wrap").forEach((w) => {
       if (w === wrap) return;
-      w.querySelectorAll(".rank-menu-dropdown").forEach((el) => el.classList.add("hidden"));
+      w.querySelectorAll(".rank-menu-panel").forEach((el) => el.classList.add("hidden"));
       w.querySelectorAll(".rank-menu-report-btn, .rank-menu-unreport-btn").forEach((el) => el.classList.add("hidden"));
+      w.querySelectorAll(".rank-menu-dropdown").forEach((el) => el.classList.add("hidden"));
     });
-    if (anyVisible) {
-      if (dropdown) dropdown.classList.add("hidden");
+    if (wasOpen) {
+      panel?.classList.add("hidden");
       menuBtns?.forEach((el) => el.classList.add("hidden"));
       if (app.rankMenuAutoCloseTimer) {
         clearTimeout(app.rankMenuAutoCloseTimer);
         app.rankMenuAutoCloseTimer = 0;
       }
     } else {
-      if (dropdown) dropdown.classList.remove("hidden");
+      panel?.classList.remove("hidden");
       menuBtns?.forEach((el) => el.classList.remove("hidden"));
       if (app.rankMenuAutoCloseTimer) clearTimeout(app.rankMenuAutoCloseTimer);
       app.rankMenuAutoCloseTimer = setTimeout(() => {
-        document.querySelectorAll(".rank-menu-dropdown").forEach((el) => el.classList.add("hidden"));
-        document.querySelectorAll(".rank-menu-report-btn, .rank-menu-unreport-btn").forEach((el) => el.classList.add("hidden"));
-        app.rankMenuAutoCloseTimer = 0;
+        closeAllRankMenuPanels();
       }, 10000);
     }
     return;
@@ -4697,8 +4997,7 @@ function onLiveRankBodyClick(event) {
     const userId = unreportBtn.dataset.userId;
     const reporter = getCurrentUser();
     if (userId && reporter) {
-      document.querySelectorAll(".rank-menu-dropdown").forEach((el) => el.classList.add("hidden"));
-      document.querySelectorAll(".rank-menu-report-btn, .rank-menu-unreport-btn").forEach((el) => el.classList.add("hidden"));
+      closeAllRankMenuPanels();
       void (async () => {
         try {
           await removeReportByReporter(reporter.id, userId);
@@ -4716,8 +5015,7 @@ function onLiveRankBodyClick(event) {
     const userId = btn.dataset.userId;
     const reporter = getCurrentUser();
     if (userId) {
-      document.querySelectorAll(".rank-menu-dropdown").forEach((el) => el.classList.add("hidden"));
-      document.querySelectorAll(".rank-menu-report-btn, .rank-menu-unreport-btn").forEach((el) => el.classList.add("hidden"));
+      closeAllRankMenuPanels();
       if (reporter && userId === reporter.id) {
         showGlobalNotice("自分自身は通報できません。", true);
         return;
@@ -4769,7 +5067,7 @@ function openRankReportModal(row, season) {
   const seasonLabel = formatSeasonLabel(season);
   if (app.els.rankReportTitle) app.els.rankReportTitle.textContent = `${row.displayName || row.name || "-"} のレポート（${seasonLabel}）`;
   const curSeason = app.state.currentSeason || getSeasonKeyJst(new Date());
-  const metaKind = String(season) === String(curSeason) ? "当月暫定ランキング" : "確定ランキング（過去月）";
+  const metaKind = String(season) === String(curSeason) ? "今月暫定ランキング" : "確定ランキング（過去月）";
   if (app.els.rankReportMeta) {
     app.els.rankReportMeta.textContent = `${seasonLabel} のリターン: ${formatPct(row.returnPct)}（${metaKind}）`;
   }
@@ -4827,7 +5125,7 @@ function onRankReportPdfClick() {
   const safeName = String(row.displayName || row.name || "ranking").replace(/[<>"&]/g, "");
   const title = `売買履歴・成果_${safeName}_${season}`;
   const curSeasonPdf = app.state.currentSeason || getSeasonKeyJst(new Date());
-  const pdfMetaKind = String(season) === String(curSeasonPdf) ? "当月暫定ランキング" : "確定ランキング（過去月）";
+  const pdfMetaKind = String(season) === String(curSeasonPdf) ? "今月暫定ランキング" : "確定ランキング（過去月）";
   const htmlContent = `<!doctype html>
 <html lang="ja">
 <head>
@@ -4886,12 +5184,7 @@ function onDocumentClick(event) {
     hideSymbolSuggestions();
   }
   if (!target.closest(".rank-menu-wrap")) {
-    document.querySelectorAll(".rank-menu-dropdown").forEach((el) => el.classList.add("hidden"));
-    document.querySelectorAll(".rank-menu-report-btn, .rank-menu-unreport-btn").forEach((el) => el.classList.add("hidden"));
-    if (app.rankMenuAutoCloseTimer) {
-      clearTimeout(app.rankMenuAutoCloseTimer);
-      app.rankMenuAutoCloseTimer = 0;
-    }
+    closeAllRankMenuPanels();
   }
 }
 
@@ -5191,7 +5484,7 @@ function hideSymbolSuggestions() {
 
 function renderTradeDetails(trades) {
   const safeTrades = Array.isArray(trades) ? trades : [];
-  return renderTradeDetailsBlock(`取引のくわしい内容 (${safeTrades.length})`, safeTrades);
+  return renderTradeDetailsBlock(`取引内容 (${safeTrades.length})`, safeTrades);
 }
 
 function renderTradeDetailsBlock(label, trades) {
@@ -5208,7 +5501,7 @@ function renderTradeDetailsBlock(label, trades) {
   }).join("");
   return `
     <details class="rank-trade-details">
-      <summary class="rank-trade-summary">${escapeHtml(label)} — 「詳細」から確認・PDF保存（PCでは行の右クリックでも可）</summary>
+      <summary class="rank-trade-summary">${escapeHtml(label)} — 「詳細」で確認・PDF保存（PCは行の右クリックでも可）</summary>
       <ul class="rank-trade-inline-list">${listItems}</ul>
     </details>
   `;
@@ -5613,6 +5906,11 @@ function releaseDeviceSeasonSlotForThisBrowserThisMonth() {
 }
 
 function enforceDeviceRegistrationLimit() {
+  /* Supabase では register Edge が device_season_registrations で強制する。
+   * ダッシュボードで app_users を消したあと、ローカルの月枠フラグだけ残ると再登録できなくなるためクラウド時はサーバーに任せる。 */
+  if (getSupabaseCloudConfig()) {
+    return;
+  }
   const deviceId = getDeviceId();
   const season = getSeasonKeyJst(new Date());
   hydrateDeviceSeasonConsumedFromStorage(season, deviceId);
@@ -5734,9 +6032,6 @@ async function registerAccount(name, password, recoveryQuestionId, recoveryAnswe
   if (getSupabaseCloudConfig()) {
     enforceRegistrationRateLimit();
     enforceDeviceRegistrationLimit();
-    if (getActiveUsers().length >= CONFIG.maxUsers) {
-      throw new Error(`登録可能なアカウントは最大${CONFIG.maxUsers}件です。`);
-    }
     const key = normalizeNameKey(name);
     if (findUserByNameKey(key, true)) {
       throw new Error("このアカウント名はすでに登録済みです。");
@@ -5761,6 +6056,7 @@ async function registerAccount(name, password, recoveryQuestionId, recoveryAnswe
     recordRegistration();
     recordDeviceRegistration();
     saveState();
+    void refreshCloudAccountRegistrationStats();
     return;
   }
 
@@ -6387,12 +6683,13 @@ function buildLiveRanking() {
         trades: [],
         winTrades: [],
         hasScore: false,
+        pendingOrderCount: !hasUnconfirmed && openPending > 0 ? openPending : null,
         note: hasUnconfirmed
           ? (openPicks >= 1
             ? (CONFIG.minPicks > 0 ? `${CONFIG.minPicks}銘柄以上で確定してください` : "銘柄を確定してください")
             : "銘柄未登録")
           : (openPending > 0
-            ? `注文中（${openPending}銘柄が約定待ち）`
+            ? ""
             : (openPicks >= 1 ? "集計待ち" : "銘柄未登録"))
       });
       continue;
@@ -6409,6 +6706,7 @@ function buildLiveRanking() {
       trades: score.trades,
       winTrades: score.winTrades,
       hasScore: true,
+      pendingOrderCount: null,
       note: ""
     });
   }
@@ -6534,6 +6832,7 @@ function getLatestFromRows(rows) {
   return { price: last.close, date: last.date };
 }
 
+/** @returns {Promise<boolean>} 状態を書き換えた（再描画が必要な）とき true */
 async function rollSeasonIfNeeded() {
   if (app._rollSeasonPromise) return app._rollSeasonPromise;
   app._rollSeasonPromise = (async () => {
@@ -6542,16 +6841,16 @@ async function rollSeasonIfNeeded() {
       if (!app.state.currentSeason) {
         app.state.currentSeason = nowSeason;
         saveState();
-        return;
+        return true;
       }
 
-      if (app.state.currentSeason === nowSeason) return;
+      if (app.state.currentSeason === nowSeason) return false;
 
       if (!/^\d{4}-\d{2}$/.test(String(app.state.currentSeason || ""))) {
         app.state.currentSeason = nowSeason;
         saveState();
         showGlobalNotice("保存されていた対戦月の形式が不正だったため、今月に合わせて修正しました。", true);
-        return;
+        return true;
       }
 
       const nowIdx = seasonToIndex(nowSeason);
@@ -6560,13 +6859,13 @@ async function rollSeasonIfNeeded() {
         app.state.currentSeason = nowSeason;
         saveState();
         showGlobalNotice("保存されていた対戦月が解釈できなかったため、今月に合わせて修正しました。", true);
-        return;
+        return true;
       }
       if (curIdx > nowIdx) {
         app.state.currentSeason = nowSeason;
         saveState();
         showGlobalNotice("保存されていた対戦月が未来日付のため、今月に合わせて修正しました。", true);
-        return;
+        return true;
       }
 
       const oldSeason = app.state.currentSeason;
@@ -6604,6 +6903,10 @@ async function rollSeasonIfNeeded() {
       saveState();
 
       showGlobalNotice(`${formatSeasonLabel(oldSeason)}を確定しました。${formatSeasonLabel(nowSeason)}を開始しました。`, false);
+      return true;
+    } catch (e) {
+      console.error("rollSeasonIfNeeded failed", e);
+      return false;
     } finally {
       app._rollSeasonPromise = null;
     }
@@ -8023,15 +8326,19 @@ function loadState() {
   }
 }
 
-function saveState() {
+/**
+ * @param {{ skipCloudPush?: boolean }} [opts] クラウド pull 直後など、同じ内容を即 push しないときに skipCloudPush: true
+ */
+function saveState(opts) {
   if (saveStateDebounceTimer != null) {
     clearTimeout(saveStateDebounceTimer);
     saveStateDebounceTimer = null;
   }
-  persistStateToStorage();
+  persistStateToStorage(opts && typeof opts === "object" ? opts : {});
 }
 
-function persistStateToStorage() {
+function persistStateToStorage(opts) {
+  const o = opts && typeof opts === "object" ? opts : {};
   try {
     if (!app?.state) return;
     if (app?.state?.security?.saveStateFailed) return;
@@ -8064,7 +8371,7 @@ function persistStateToStorage() {
       return;
     }
     localStorage.setItem(CONFIG.storageKey, json);
-    scheduleCloudPush();
+    if (!o.skipCloudPush) scheduleCloudPush();
   } catch (error) {
     console.error("saveState failed", error);
     try {

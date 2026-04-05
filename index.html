@@ -120,7 +120,7 @@
     href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="./stockgame.css?v=65" />
+  <link rel="stylesheet" href="./stockgame.css?v=85" />
 </head>
 <body>
   <noscript>
@@ -195,7 +195,7 @@
         <div id="registerRulesStep" class="register-rules-step hidden">
           <h3>ルール</h3>
           <div class="register-rules-body">
-            <p class="rule-lead">毎月の購入・売却などの運用で、<br>保有銘柄の上昇率（%）を参加者どうしで競うゲームです。<br>ランキング1位を目指して頑張りましょう！</p>
+            <p class="rule-lead rule-lead--flow">毎月の購入・売却などの運用で、保有銘柄の上昇率（%）を参加者どうしで競うゲームです。<br />ランキング1位を目指して頑張りましょう！</p>
             <ul class="rule-list">
               <li><strong>保有数</strong>: 1人 <strong>最低1銘柄</strong>・<strong>最大5銘柄</strong></li>
               <li><strong>注文入力</strong>: 売買できる期間内で、買い注文・売り注文をいつでも入力できます</li>
@@ -257,20 +257,20 @@
     <div class="layout-grid" id="layoutGrid">
       <section class="left-col hidden" id="menuPanelContainer">
         <article class="card reveal" id="authCard">
-          <h2 id="authCardTitle">はじめる</h2>
+          <h2 id="authCardTitle">ログイン</h2>
           <form id="authForm" autocomplete="on">
             <div class="field">
               <label for="authName">アカウント名（ID）</label>
               <input id="authName" name="username" type="text" maxlength="8" placeholder="例: たろう / trader01" required />
-              <small>日本語可。2〜8文字、日本語/英数字/記号を使用できます。</small>
+              <small id="authNameHintRegister" class="hidden">日本語可。2〜8文字、日本語/英数字/記号を使用できます。</small>
             </div>
-            <div class="field">
+            <div class="field auth-field-password">
               <label for="authPassword">パスワード</label>
               <div class="input-with-toggle">
               <input id="authPassword" name="password" type="password" maxlength="30" placeholder="英字・数字・記号/ 4文字以上" required autocomplete="new-password" />
                 <button type="button" class="password-toggle-btn password-toggle-eye" id="authPasswordToggle" aria-label="押している間だけパスワードを表示" title="押している間だけ表示"><svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
               </div>
-              <small>4〜30文字（英字・数字・記号、空白なし）です。</small>
+              <small>4〜30文字（英字・数字・記号、空白なし）</small>
             </div>
             <div class="field hidden" id="passwordConfirmField">
               <label for="authPasswordConfirm">パスワード（確認）</label>
@@ -294,13 +294,17 @@
               <small>パスワードを忘れたときに使います。内容は保存時のみ暗号化され、第三者には見えません。</small>
             </div>
             <p id="registerTrialNotice" class="register-trial-notice hidden" role="note">
-              ※このサイトは試験公開版です。大切なパスワードは使用しないでください。
+              ※大切なパスワードは使用しないでください。
             </p>
             <p id="registerCountInfo" class="section-note hidden">登録可能数: <strong id="accountCountLabel">0 / 100</strong></p>
-            <div class="button-row">
-              <button id="authSubmitBtn" type="submit" class="btn btn-primary">ログイン</button>
-              <button id="switchAuthModeBtn" type="button" class="btn btn-secondary">アカウント新規作成</button>
-              <button id="toggleResetBtn" type="button" class="btn btn-strong">パスワードを忘れたとき</button>
+            <div class="auth-form-button-stack">
+              <div class="auth-form-submit-row">
+                <button id="authSubmitBtn" type="submit" class="btn btn-primary">ログイン</button>
+              </div>
+              <div id="authLoginSecondaryRow" class="auth-form-secondary-row">
+                <button id="switchAuthModeBtn" type="button" class="btn btn-secondary">新規登録へ</button>
+                <button id="toggleResetBtn" type="button" class="btn btn-strong">パスワードを忘れたとき</button>
+              </div>
             </div>
           </form>
           <form id="resetForm" class="stack-form hidden" autocomplete="on">
@@ -350,7 +354,7 @@
                     <th>銘柄</th>
                     <th>買付日</th>
                     <th>取得単価</th>
-                    <th>現在価格・売却価格</th>
+                    <th>現在・売却価格</th>
                     <th>状態／売却日</th>
                     <th>損益</th>
                   </tr>
@@ -363,9 +367,11 @@
             </div>
           </section>
           <h3>アカウント設定</h3>
-          <div class="account-setting-buttons">
+          <div class="account-quick-actions">
             <button id="toggleRenameBtn" type="button" class="btn btn-ghost">ID変更</button>
             <button id="togglePasswordBtn" type="button" class="btn btn-ghost">パスワード変更</button>
+            <button id="logoutBtn" class="btn btn-secondary" type="button">ログアウト</button>
+            <button id="deleteAccountBtn" type="button" class="btn btn-ghost account-delete-btn">アカウントを消す</button>
           </div>
           <div id="renameFormBlock" class="account-form-block hidden">
             <form id="renameForm" class="stack-form">
@@ -395,12 +401,6 @@
             </form>
           </div>
           <div id="accountMessage" class="inline-message"></div>
-          <div class="button-row">
-            <button id="logoutBtn" class="btn btn-secondary" type="button">ログアウト</button>
-          </div>
-          <div class="button-row">
-            <button id="deleteAccountBtn" type="button" class="btn btn-ghost" style="color: var(--danger);">アカウントを消す</button>
-          </div>
         </article>
 
         <article class="card reveal hidden" id="pickPanel">
@@ -427,7 +427,7 @@
               </div>
             </div>
             <div id="symbolHints" class="symbol-hints"></div>
-            <div class="button-row">
+            <div class="button-row pick-symbol-form-row">
               <button type="button" id="previewBtn" class="btn btn-ghost">現在値を確認</button>
               <button type="submit" id="addPickBtn" class="btn btn-primary">この銘柄を追加</button>
               <button type="button" id="chartExternalBtn" class="btn btn-ghost hidden">チャートを見る</button>
@@ -452,10 +452,9 @@
               <thead>
                 <tr>
                   <th>銘柄</th>
-                  <th>市場</th>
                   <th>状態</th>
                   <th>約定値</th>
-                  <th>現在の株価（終値）</th>
+                  <th>現在の株価</th>
                   <th>騰落率</th>
                   <th>操作</th>
                 </tr>
@@ -464,14 +463,16 @@
             </table>
           </div>
 
-          <div class="button-row">
-            <button id="refreshMyPricesBtn" class="btn btn-secondary" type="button">保有銘柄の終値を更新</button>
-            <button id="apiDiagBtn" class="btn btn-ghost" type="button">通信の確認</button>
-          </div>
-          <div id="pickConfirmState" class="section-note"></div>
-          <div id="apiDiagMessage" class="api-diag hidden"></div>
-          <div class="footer-action">
-            <button type="button" id="confirmPicksBtn" class="btn btn-confirm">銘柄を決定</button>
+          <div class="pick-panel-actions">
+            <div class="button-row pick-confirm-row">
+              <button type="button" id="confirmPicksBtn" class="btn btn-confirm">銘柄の確定</button>
+            </div>
+            <div class="button-row pick-refresh-diag-row">
+              <button id="refreshMyPricesBtn" class="btn btn-secondary" type="button">保有銘柄の終値を更新</button>
+              <button id="apiDiagBtn" class="btn btn-ghost" type="button">通信の確認</button>
+            </div>
+            <div id="pickConfirmState" class="section-note pick-confirm-state-note"></div>
+            <div id="apiDiagMessage" class="api-diag hidden"></div>
           </div>
           <p id="pickUnconfirmedNotice" class="section-note pick-unconfirmed-notice hidden" aria-live="polite">※未確定のまま他画面へ移動すると変更は破棄されます。</p>
           <div id="pickMessage" class="inline-message"></div>
@@ -480,11 +481,11 @@
 
       <section class="right-col">
         <article class="card reveal" id="liveRankCard">
-          <h2 class="rank-live-title">当月ランキング</h2>
+          <h2 class="rank-live-title">今月ランキング</h2>
           <p class="section-note">終値更新時点の暫定順位です。月末に確定します。</p>
-          <div class="button-row" style="margin-bottom: 0.75rem;">
-            <button id="refreshRankBtn" class="btn btn-secondary" type="button">最新の順位を見る</button>
-            <span id="rankLastUpdateLabel" class="section-note" style="margin-left: 0.5rem;"></span>
+          <div class="rank-refresh-toolbar">
+            <button id="refreshRankBtn" class="btn btn-secondary rank-refresh-btn" type="button">最新の順位を見る</button>
+            <span id="rankLastUpdateLabel" class="section-note rank-last-update-label"></span>
           </div>
           <div class="table-wrap">
             <table id="liveRankTable">
@@ -494,8 +495,8 @@
                   <th>アカウント名</th>
                   <th>上昇率</th>
                   <th>保有銘柄</th>
-                  <th>取引のくわしい内容</th>
-                  <th class="col-menu" aria-label="メニュー"></th>
+                  <th>取引内容</th>
+                  <th class="col-menu" aria-label="メニュー">操作</th>
                 </tr>
               </thead>
               <tbody id="liveRankBody"></tbody>
@@ -506,7 +507,7 @@
         <article class="card reveal hidden" id="historyCard">
           <h2>過去の結果</h2>
           <div class="history-controls">
-            <select id="historyMonthSelect" size="5" aria-label="過去の結果から表示する期間を選択"></select>
+            <select id="historyMonthSelect" aria-label="過去の結果から表示する期間を選択"></select>
           </div>
           <div class="table-wrap">
             <table id="historyTable">
@@ -516,8 +517,8 @@
                   <th>アカウント名</th>
                   <th>上昇率</th>
                   <th>保有銘柄</th>
-                  <th>取引のくわしい内容</th>
-                  <th class="col-menu" aria-label="メニュー"></th>
+                  <th>取引内容</th>
+                  <th class="col-menu" aria-label="メニュー">操作</th>
                 </tr>
               </thead>
               <tbody id="historyTableBody"></tbody>
@@ -551,7 +552,7 @@
       <article class="card reveal hidden" id="ruleCard">
         <h2>ルール</h2>
         <div class="rule-body">
-          <p class="rule-lead">毎月の購入・売却などの運用で、保有銘柄の上昇率（%）を参加者どうしで競うゲームです。<br>ランキング1位を目指して頑張りましょう！</p>
+          <p class="rule-lead rule-lead--flow">毎月の購入・売却などの運用で、保有銘柄の上昇率（%）を参加者どうしで競うゲームです。<br />ランキング1位を目指して頑張りましょう！</p>
           <ul class="rule-list">
             <li><strong>保有数</strong>: 1人 <strong>最低1銘柄</strong>・<strong>最大5銘柄</strong></li>
             <li><strong>注文入力</strong>: 売買できる期間内で、買い注文・売り注文をいつでも入力できます</li>
@@ -582,7 +583,7 @@
      * 運用チェックリスト（本番で Supabase を有効にする前）:
      * 1) supabase/migrations をすべて適用（app_users / game_state / device_season_registrations など）
      * 2) Edge Functions をデプロイ: register, login, logout, load-state, save-state, reset-password,
-     *    change-password, rename-account, delete-account（config.toml の verify_jwt=false を反映）
+     *    change-password, rename-account, delete-account, ranking-snapshot（config.toml の verify_jwt=false を反映）
      * 3) シークレット: STOCKGAME_SESSION_SECRET（またはプロジェクトで使っているセッション用 env）を設定
      * 4) 下の anonKey に Dashboard → Settings → API の anon JWT（eyJ…）を入れる（未設定だと 401 になりがち）
      *
@@ -598,6 +599,6 @@
     };
   </script>
   <script src="./jp_company_autocomplete_engine.js"></script>
-  <script src="./stockgame.js?v=85" defer></script>
+  <script src="./stockgame.js?v=101" defer></script>
 </body>
 </html>
