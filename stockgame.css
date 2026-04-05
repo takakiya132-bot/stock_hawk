@@ -102,9 +102,13 @@ input[type="password"]::-ms-clear {
 .app-shell {
   position: relative;
   z-index: 1;
-  width: min(1320px, calc(100% - 32px));
+  /* ビューポート幅いっぱいに使う（ランキング右の大きな余白を防ぐ）。横はパディングのみ */
+  width: 100%;
   max-width: 100%;
-  margin: 24px auto 56px;
+  margin: 24px 0 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  box-sizing: border-box;
   display: grid;
   gap: 18px;
   /* 表などの min-width でページ全体が横に伸びないように（必要なら .table-wrap 内だけスクロール） */
@@ -863,7 +867,15 @@ small {
 .pick-panel-actions .pick-confirm-row .btn {
   flex: 0 0 auto;
   width: auto;
-  max-width: min(100%, 22rem);
+  max-width: min(100%, 28rem);
+}
+
+/* 銘柄の確定: 主要CTA — タップしやすい高さ・文字サイズ */
+#pickPanel .pick-confirm-row .btn.btn-confirm {
+  min-height: clamp(46px, 2.6vw + 34px, 56px);
+  padding: clamp(0.4rem, 1.05vw + 0.22rem, 0.62rem) clamp(0.8rem, 2.1vw + 0.48rem, 1.2rem);
+  font-size: clamp(0.72rem, 0.95vw + 0.56rem, 0.98rem);
+  font-weight: 700;
 }
 
 .pick-panel-actions .pick-refresh-diag-row {
@@ -1183,7 +1195,6 @@ tbody tr:hover {
 }
 
 .rank-symbols-cell {
-  max-width: 260px; /* 「保有銘柄」列を広げる（取引詳細との見た目のバランス改善） */
   word-break: keep-all;
   overflow-wrap: normal;
   white-space: normal;
@@ -1555,10 +1566,6 @@ tbody tr:hover {
   opacity: 1;
 }
 .btn-confirm { font-weight: 700; }
-
-#pickPanel .button-row .btn.btn-confirm {
-  font-weight: 650;
-}
 
 .btn-add-done {
   color: var(--muted);
@@ -2258,6 +2265,75 @@ tbody tr:hover {
   transform: none;
 }
 
+/* PC のみ（1021px 以上）: ランキングを親・ビューポート幅いっぱいに伸ばす。スマホは max-width:1020px ブロックのまま */
+@media (min-width: 1021px) {
+  .layout-grid {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .layout-grid.with-left .right-col {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  #liveRankCard,
+  #historyCard,
+  #ruleCard {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  #liveRankCard .table-wrap,
+  #historyCard .table-wrap {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  #liveRankTable,
+  #historyTable {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
+    box-sizing: border-box;
+  }
+
+  /* 操作列を％指定し 5+13+8+35+29+10=100（右端の空白列を出しにくくする） */
+  #liveRankTable thead th.col-menu,
+  #liveRankTable td.col-menu,
+  #historyTable thead th.col-menu,
+  #historyTable td.col-menu {
+    width: 10%;
+    min-width: 4.75rem;
+  }
+
+  #liveRankTable td.rank-symbols-cell,
+  #historyTable td.rank-symbols-cell {
+    max-width: none;
+  }
+
+  /* 5+13+8+36+28+10=100（操作列10%は上で固定） */
+  @media (min-width: 1320px) {
+    #liveRankTable th:nth-child(4),
+    #liveRankTable td:nth-child(4),
+    #historyTable th:nth-child(4),
+    #historyTable td:nth-child(4) {
+      width: 36%;
+    }
+
+    #liveRankTable th:nth-child(5),
+    #liveRankTable td:nth-child(5),
+    #historyTable th:nth-child(5),
+    #historyTable td:nth-child(5) {
+      width: 28%;
+    }
+  }
+}
+
 @media (max-width: 1020px) {
   .topbar {
     grid-template-columns: 1fr;
@@ -2339,9 +2415,14 @@ tbody tr:hover {
   }
 
   .app-shell {
-    width: min(100%, calc(100% - 16px));
+    width: 100%;
+    max-width: 100%;
     margin-top: 12px;
     margin-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: max(8px, env(safe-area-inset-left, 0px));
+    padding-right: max(8px, env(safe-area-inset-right, 0px));
   }
 
   .card {
@@ -2380,7 +2461,13 @@ tbody tr:hover {
   .pick-panel-actions .pick-confirm-row .btn {
     flex: 0 0 auto !important;
     width: auto !important;
-    max-width: min(100%, 22rem);
+    max-width: min(100%, 28rem);
+  }
+
+  #pickPanel .pick-confirm-row .btn.btn-confirm {
+    min-height: clamp(48px, 2.8vw + 36px, 56px) !important;
+    padding: clamp(0.42rem, 1.1vw + 0.24rem, 0.65rem) clamp(0.75rem, 2vw + 0.42rem, 1.15rem) !important;
+    font-size: clamp(0.78rem, 1vw + 0.58rem, 1.02rem) !important;
   }
 
   .pick-panel-actions .pick-refresh-diag-row .btn {
@@ -2791,17 +2878,34 @@ tbody tr:hover {
 
   #historyCard .table-wrap,
   #liveRankCard .table-wrap {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     overflow-x: auto;
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
   }
 
+  #liveRankCard,
+  #historyCard {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .right-col {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* max-content だと列幅合計が狭いとき親より細くなり右に空白が出る → 常に親幅100% */
   #liveRankTable,
   #historyTable {
     display: table;
-    width: max-content;
-    max-width: none;
-    min-width: 100%;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
@@ -2857,59 +2961,59 @@ tbody tr:hover {
     text-align: left;
   }
 
-  /* 列幅: thead / tbody で同一 */
+  /* 列幅: 合計100%で親いっぱい（中画面でも右端の空白を出さない）。狭すぎるときは .table-wrap が横スクロール */
   #liveRankTable th:nth-child(1),
   #liveRankTable td:nth-child(1),
   #historyTable th:nth-child(1),
   #historyTable td:nth-child(1) {
-    width: 3rem;
-    min-width: 3rem;
-    max-width: 3.25rem;
+    width: 8%;
+    min-width: 2.65rem;
+    max-width: none;
   }
 
   #liveRankTable th:nth-child(2),
   #liveRankTable td:nth-child(2),
   #historyTable th:nth-child(2),
   #historyTable td:nth-child(2) {
-    width: 5.75rem;
-    min-width: 5.75rem;
-    max-width: 7.5rem;
+    width: 17%;
+    min-width: 4.25rem;
+    max-width: none;
   }
 
   #liveRankTable th:nth-child(3),
   #liveRankTable td:nth-child(3),
   #historyTable th:nth-child(3),
   #historyTable td:nth-child(3) {
-    width: 3.5rem;
-    min-width: 3.5rem;
-    max-width: 4rem;
+    width: 10%;
+    min-width: 3rem;
+    max-width: none;
   }
 
   #liveRankTable th:nth-child(4),
   #liveRankTable td:nth-child(4),
   #historyTable th:nth-child(4),
   #historyTable td:nth-child(4) {
-    width: 11.5rem;
-    min-width: 11.5rem;
-    max-width: 16rem;
+    width: 36%;
+    min-width: 0;
+    max-width: none;
   }
 
   #liveRankTable th:nth-child(5),
   #liveRankTable td:nth-child(5),
   #historyTable th:nth-child(5),
   #historyTable td:nth-child(5) {
-    width: 9.5rem;
-    min-width: 9.5rem;
-    max-width: 13rem;
+    width: 22%;
+    min-width: 0;
+    max-width: none;
   }
 
   #liveRankTable th:nth-child(6),
   #liveRankTable td:nth-child(6),
   #historyTable th:nth-child(6),
   #historyTable td:nth-child(6) {
-    width: 5rem;
-    min-width: 5rem;
-    max-width: 6rem;
+    width: 7%;
+    min-width: 2.85rem;
+    max-width: none;
     padding-left: 4px;
     padding-right: 4px;
   }
@@ -3091,8 +3195,11 @@ tbody tr:hover {
 
 @media (max-width: 380px) {
   .app-shell {
-    width: calc(100% - 12px);
-    margin: 10px auto 24px;
+    width: 100%;
+    max-width: 100%;
+    margin: 10px 0 24px;
+    padding-left: max(6px, env(safe-area-inset-left, 0px));
+    padding-right: max(6px, env(safe-area-inset-right, 0px));
   }
 
   .card {

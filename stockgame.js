@@ -66,8 +66,8 @@ const CONFIG = Object.freeze({
   /** 未ログイン向け ranking-snapshot のクライアント側スロットル（タブ復帰・可視化の連打対策。日4回の定時取得は別ルート） */
   /* 可視タブの定期 pull でランキングを取り直す最短間隔（削除反映を遅らせないよう短め） */
   publicRankingSnapshotMinIntervalMs: 2 * 60 * 1000,
-  /** 同一クライアントからの Yahoo Finance（query1 / chart / search）への最短間隔（ms）。インタラクティブ時の短い gap でも負荷を抑える */
-  yahooFinanceMinGapMs: 550,
+  /** 同一クライアントからの Yahoo Finance（query1 / chart / search）への最短間隔（ms）。429 回避の余裕を少し持たせる */
+  yahooFinanceMinGapMs: 620,
   /** Yahoo 銘柄検索 API（v1/search）の連打制限（嫌がらせ・スキャン対策） */
   clientRateYahooSearchWindowMs: 60 * 1000,
   clientRateYahooSearchMax: 5,
@@ -7921,8 +7921,8 @@ async function searchSymbolsByName(query, marketType, limit = 8) {
   let quotes = Array.isArray(json?.quotes) ? json.quotes : [];
   pushFromQuotes(quotes);
 
-  // query2 は件数が足りないときのみ（primary だけで十分なら二重ヒットしない）
-  if (out.length < safeLimit) {
+  // query2 は「primary で1件も取れなかったとき」だけ（件数が足りないだけでは二重ヒットしない → Yahoo 負荷削減）
+  if (out.length === 0) {
     try {
       json = await queuedFetchJson(altUrl);
       quotes = Array.isArray(json?.quotes) ? json.quotes : [];
