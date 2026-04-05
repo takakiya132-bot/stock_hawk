@@ -120,7 +120,7 @@
     href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="./stockgame.css?v=85" />
+  <link rel="stylesheet" href="./stockgame.css?v=86" />
 </head>
 <body>
   <noscript>
@@ -405,10 +405,6 @@
 
         <article class="card reveal hidden" id="pickPanel">
           <h2>銘柄選択</h2>
-          <div class="pick-timing-note" role="note">
-            <span class="pick-timing-note__hdr">約定</span>
-            <span class="pick-timing-note__txt">日本・米国株は「寄りの約30分後」と「終値」。仮想通貨は日本時間の0:00と12:00</span>
-          </div>
           <form id="symbolForm" autocomplete="on">
             <div class="field-grid">
               <div class="field">
@@ -473,6 +469,10 @@
             </div>
             <div id="pickConfirmState" class="section-note pick-confirm-state-note"></div>
             <div id="apiDiagMessage" class="api-diag hidden"></div>
+            <div class="pick-timing-note pick-timing-note--below-diag" role="note">
+              <span class="pick-timing-note__hdr">約定</span>
+              <span class="pick-timing-note__txt">日本・米国株は「寄りの約30分後」と「終値」。仮想通貨は日本時間の0:00と12:00</span>
+            </div>
           </div>
           <p id="pickUnconfirmedNotice" class="section-note pick-unconfirmed-notice hidden" aria-live="polite">※未確定のまま他画面へ移動すると変更は破棄されます。</p>
           <div id="pickMessage" class="inline-message"></div>
@@ -599,6 +599,6 @@
     };
   </script>
   <script src="./jp_company_autocomplete_engine.js"></script>
-  <script src="./stockgame.js?v=101" defer></script>
+  <script src="./stockgame.js?v=102" defer></script>
 </body>
 </html>

@@ -685,6 +685,14 @@ small {
   font-weight: 400;
 }
 
+/* 通信: 正常／エラーの下に約定説明を置く */
+#pickPanel .pick-timing-note--below-diag {
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(18, 61, 62, 0.1);
+}
+
 .rank-note {
   color: #567172;
   font-size: 0.82rem;
@@ -1081,6 +1089,11 @@ small {
   font-size: 1rem;
   font-weight: 600;
   color: var(--muted);
+}
+
+.monthly-result-none .monthly-result-line1,
+.monthly-result-none .monthly-result-line2 {
+  display: inline;
 }
 
 .account-refresh-row {
@@ -2273,6 +2286,15 @@ tbody tr:hover {
     margin-top: 0.25rem;
   }
 
+  .monthly-result-none .monthly-result-line1 {
+    display: block;
+    margin-bottom: 0.25em;
+  }
+
+  .monthly-result-none .monthly-result-line2 {
+    display: block;
+  }
+
   /* 銘柄追加フォーム: 狭幅で子が親を押し広げない */
   #pickPanel .field-grid,
   #pickPanel .field-grid .field {
@@ -2347,22 +2369,39 @@ tbody tr:hover {
     width: auto !important;
   }
 
-  /* 銘柄フォームのボタンは常に1行（.button-row の縦積みを打ち消す）。サイズは #pickPanel .button-row .btn の clamp に任せる */
+  /* 銘柄フォーム: 文字がボタンからはみ出さないよう小さめ＋折り返し可 */
   #symbolForm .pick-symbol-form-row .btn {
     flex: 1 1 0 !important;
     min-width: 0 !important;
     width: auto !important;
-    white-space: nowrap !important;
+    white-space: normal !important;
+    line-height: 1.18 !important;
+    font-size: clamp(0.48rem, 2.1vw + 0.38rem, 0.7rem) !important;
+    padding: clamp(0.2rem, 1.2vw + 0.08rem, 0.38rem) clamp(0.16rem, 0.9vw + 0.06rem, 0.42rem) !important;
+    min-height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    word-break: keep-all !important;
+    overflow-wrap: anywhere !important;
   }
 
   #accountPanel .account-quick-actions .btn {
     flex: 1 1 0 !important;
     min-width: 0 !important;
     width: auto !important;
-    min-height: 36px !important;
-    font-size: clamp(0.54rem, 1.85vw + 0.42rem, 0.76rem) !important;
-    padding: 0.34rem 0.18rem !important;
-    white-space: nowrap !important;
+    min-height: 38px !important;
+    font-size: clamp(0.46rem, 2vw + 0.36rem, 0.68rem) !important;
+    padding: 0.28rem 0.12rem !important;
+    white-space: normal !important;
+    line-height: 1.15 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    word-break: keep-all !important;
+    overflow-wrap: anywhere !important;
   }
 
   .suggest-item {
@@ -2721,6 +2760,11 @@ tbody tr:hover {
   #liveRankTable thead,
   #historyTable thead {
     display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 
   #liveRankTable thead tr,
@@ -2734,6 +2778,8 @@ tbody tr:hover {
     margin: 0 0 4px;
     border-bottom: 1px solid rgba(18, 61, 62, 0.14);
     box-sizing: border-box;
+    width: max-content;
+    min-width: 100%;
   }
 
   #liveRankTable thead th,
@@ -2742,12 +2788,13 @@ tbody tr:hover {
     min-width: 0;
     margin: 0;
     padding: 0 2px;
-    font-size: clamp(0.52rem, 0.65vw + 0.44rem, 0.68rem);
+    font-size: clamp(0.5rem, 0.55vw + 0.42rem, 0.64rem);
     font-weight: 650;
-    line-height: 1.15;
+    line-height: 1.2;
     color: #4a6a6b;
     text-align: center;
-    white-space: normal;
+    white-space: nowrap;
+    flex-shrink: 0;
     overflow: visible;
     text-overflow: clip;
   }
@@ -2795,6 +2842,12 @@ tbody tr:hover {
     white-space: nowrap;
     overflow: visible;
     text-overflow: clip;
+  }
+
+  /* スマホ: （買注）（売注）は省略（銘柄名のみ） */
+  #liveRankTable .rank-order-note,
+  #historyTable .rank-order-note {
+    display: none !important;
   }
 
   #liveRankTable tbody tr.rank-table-empty,
@@ -3248,7 +3301,45 @@ tbody tr:hover {
     white-space: normal;
     overflow-wrap: anywhere;
     word-break: break-word;
-    line-height: 1.38;
+    line-height: 1.42;
+  }
+
+  /* 保有銘柄・取引内容をアカウント名と同程度の小ささに揃え、下欠けを防ぐ */
+  #liveRankTable tbody tr.rank-row td.rank-symbols-cell,
+  #historyTable tbody tr.rank-row td.rank-symbols-cell,
+  #liveRankTable tbody tr.rank-row td.rank-trade-col,
+  #historyTable tbody tr.rank-row td.rank-trade-col {
+    font-size: clamp(0.6rem, 1.45vw + 0.5rem, 0.74rem) !important;
+    line-height: 1.45 !important;
+    padding-bottom: 5px !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  #liveRankTable tbody tr.rank-row td.rank-symbols-cell *,
+  #historyTable tbody tr.rank-row td.rank-symbols-cell *,
+  #liveRankTable tbody tr.rank-row td.rank-trade-col *,
+  #historyTable tbody tr.rank-row td.rank-trade-col * {
+    font-size: inherit !important;
+    line-height: inherit !important;
+  }
+
+  #liveRankTable tbody tr.rank-row .rank-note,
+  #historyTable tbody tr.rank-row .rank-note,
+  #liveRankTable tbody tr.rank-row .rank-note--stacked,
+  #historyTable tbody tr.rank-row .rank-note--stacked,
+  #liveRankTable tbody tr.rank-row .rank-note__line1,
+  #historyTable tbody tr.rank-row .rank-note__line1,
+  #liveRankTable tbody tr.rank-row .rank-note__line2,
+  #historyTable tbody tr.rank-row .rank-note__line2 {
+    font-size: inherit !important;
+    line-height: inherit !important;
+  }
+
+  #liveRankTable tbody tr.rank-row td.rank-symbols-cell .rank-holding-pending,
+  #historyTable tbody tr.rank-row td.rank-symbols-cell .rank-holding-pending {
+    white-space: normal;
   }
 
   /* 列名は thead 表示のため、セル内 data-label は出さない */
@@ -3274,8 +3365,8 @@ tbody tr:hover {
   #historyTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n7,
   #liveRankTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n8,
   #historyTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n8 {
-    font-size: clamp(0.67rem, 0.55vw + 0.57rem, 0.78rem);
-    line-height: 1.3;
+    font-size: clamp(0.6rem, 1.45vw + 0.5rem, 0.74rem);
+    line-height: 1.45;
     letter-spacing: 0;
     font-weight: 600;
   }

@@ -3041,7 +3041,11 @@ function renderMonthlyResult(user) {
   const season = app.state.currentSeason || getSeasonKeyJst(new Date());
   const score = calcUserScore(user, "latest", season);
   if (!score) {
-    block.innerHTML = `<p class="monthly-result-label">今月のリターン</p><p class="monthly-result-value monthly-result-none">${CONFIG.minPicks > 0 ? `対象銘柄が不足しています（${CONFIG.minPicks}銘柄以上で確定が必要です）` : "銘柄を追加するとリターンが算出されます。0銘柄のままでも確定できます。"}</p>`;
+    const noneInner =
+      CONFIG.minPicks > 0
+        ? `<span class="monthly-result-line1">対象銘柄が不足しています</span><span class="monthly-result-line2">（${CONFIG.minPicks}銘柄以上で確定が必要です）</span>`
+        : "銘柄を追加するとリターンが算出されます。0銘柄のままでも確定できます。";
+    block.innerHTML = `<p class="monthly-result-label">今月のリターン</p><p class="monthly-result-value monthly-result-none">${noneInner}</p>`;
     return;
   }
   const pctClass = score.returnPct > 0 ? "pct-up" : score.returnPct < 0 ? "pct-down" : "pct-flat";
