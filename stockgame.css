@@ -287,6 +287,26 @@ input[type="password"]::-ms-clear {
   line-height: 1.52;
 }
 
+/* ルール本文: 狭い画面だけ意図した位置で改行 */
+br.rule-br-mobile {
+  display: none;
+}
+
+@media (max-width: 820px) {
+  br.rule-br-mobile {
+    display: block;
+  }
+}
+
+/* 約定タイミングの内側リスト: 狭い画面では文字を詰めて1行に近づける */
+@media (max-width: 820px) {
+  .rule-timing-sub li {
+    font-size: clamp(0.62rem, 1.85vw + 0.48rem, 0.84rem);
+    line-height: 1.38;
+    word-break: keep-all;
+  }
+}
+
 .rule-body .rule-list,
 .register-rules-body .rule-list {
   margin: 0;
@@ -2369,39 +2389,54 @@ tbody tr:hover {
     width: auto !important;
   }
 
-  /* 銘柄フォーム: 文字がボタンからはみ出さないよう小さめ＋折り返し可 */
+  /* 銘柄フォーム: 改行より文字を小さくして1行に近づける。はみ出す場合は行を横スクロール */
+  #symbolForm .pick-symbol-form-row {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
   #symbolForm .pick-symbol-form-row .btn {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    min-width: max-content !important;
     width: auto !important;
-    white-space: normal !important;
-    line-height: 1.18 !important;
-    font-size: clamp(0.48rem, 2.1vw + 0.38rem, 0.7rem) !important;
-    padding: clamp(0.2rem, 1.2vw + 0.08rem, 0.38rem) clamp(0.16rem, 0.9vw + 0.06rem, 0.42rem) !important;
+    white-space: nowrap !important;
+    line-height: 1.15 !important;
+    font-size: clamp(0.38rem, 2.35vw + 0.26rem, 0.68rem) !important;
+    padding: clamp(0.18rem, 1vw + 0.06rem, 0.34rem) clamp(0.12rem, 0.85vw + 0.04rem, 0.36rem) !important;
     min-height: 36px !important;
-    display: flex !important;
+    display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     text-align: center !important;
     word-break: keep-all !important;
-    overflow-wrap: anywhere !important;
+    overflow-wrap: normal !important;
+  }
+
+  #accountPanel .account-quick-actions {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    justify-content: flex-start;
   }
 
   #accountPanel .account-quick-actions .btn {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    min-width: max-content !important;
     width: auto !important;
     min-height: 38px !important;
-    font-size: clamp(0.46rem, 2vw + 0.36rem, 0.68rem) !important;
-    padding: 0.28rem 0.12rem !important;
-    white-space: normal !important;
+    font-size: clamp(0.38rem, 2.2vw + 0.28rem, 0.66rem) !important;
+    padding: 0.26rem 0.45rem !important;
+    white-space: nowrap !important;
     line-height: 1.15 !important;
-    display: flex !important;
+    display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     text-align: center !important;
     word-break: keep-all !important;
-    overflow-wrap: anywhere !important;
+    overflow-wrap: normal !important;
   }
 
   .suggest-item {
@@ -2747,309 +2782,199 @@ tbody tr:hover {
     display: none !important;
   }
 
-  /* --- ランキング・履歴：A カード内グリッド（1行目=順位+名前+上昇率） --- */
+  /* --- ランキング・過去結果: table＋親1か所の横スクロール（見出しと列が連動） --- */
+  .table-wrap {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  #historyCard .table-wrap,
+  #liveRankCard .table-wrap {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+
   #liveRankTable,
   #historyTable {
-    min-width: 0 !important;
-    width: 100%;
+    display: table;
+    width: max-content;
+    max-width: none;
+    min-width: 100%;
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
+    margin: 0;
+    background: #fcfffe;
   }
 
   #liveRankTable thead,
   #historyTable thead {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
+    display: table-header-group;
+    width: auto;
+    max-width: none;
+    overflow: visible;
+  }
+
+  #liveRankTable tbody,
+  #historyTable tbody {
+    display: table-row-group;
   }
 
   #liveRankTable thead tr,
-  #historyTable thead tr {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: flex-end;
-    gap: 4px 6px;
-    padding: 4px 8px 6px;
-    margin: 0 0 4px;
-    border-bottom: 1px solid rgba(18, 61, 62, 0.14);
-    box-sizing: border-box;
-    width: max-content;
-    min-width: 100%;
+  #historyTable thead tr,
+  #liveRankTable tbody tr.rank-table-empty,
+  #historyTable tbody tr.rank-table-empty,
+  #liveRankTable tbody tr.rank-row,
+  #historyTable tbody tr.rank-row {
+    display: table-row;
   }
 
   #liveRankTable thead th,
   #historyTable thead th {
-    flex: 0 0 auto;
-    min-width: 0;
-    margin: 0;
-    padding: 0 2px;
-    font-size: clamp(0.5rem, 0.55vw + 0.42rem, 0.64rem);
+    display: table-cell;
+    box-sizing: border-box;
+    vertical-align: bottom;
+    padding: 8px 6px 7px;
+    font-size: clamp(0.42rem, 1.65vw + 0.28rem, 0.6rem);
     font-weight: 650;
     line-height: 1.2;
     color: #4a6a6b;
-    text-align: center;
     white-space: nowrap;
-    flex-shrink: 0;
-    overflow: visible;
-    text-overflow: clip;
-  }
-
-  #liveRankTable thead th:nth-child(1),
-  #historyTable thead th:nth-child(1) {
-    flex: 0 0 2.75rem;
-    max-width: 3rem;
+    word-break: keep-all;
+    text-align: center;
+    background: #eff7f6;
+    border-bottom: 1px solid rgba(18, 61, 62, 0.18);
   }
 
   #liveRankTable thead th:nth-child(2),
-  #historyTable thead th:nth-child(2) {
-    flex: 0 1 15%;
-    min-width: 3.25rem;
-    text-align: left;
-  }
-
-  #liveRankTable thead th:nth-child(3),
-  #historyTable thead th:nth-child(3) {
-    flex: 0 0 3.1rem;
-  }
-
+  #historyTable thead th:nth-child(2),
   #liveRankTable thead th:nth-child(4),
-  #historyTable thead th:nth-child(4) {
-    flex: 1 1 22%;
-    min-width: 4rem;
-    text-align: left;
-  }
-
+  #historyTable thead th:nth-child(4),
   #liveRankTable thead th:nth-child(5),
   #historyTable thead th:nth-child(5) {
-    flex: 1 1 26%;
-    min-width: 4.25rem;
     text-align: left;
   }
 
-  #liveRankTable thead th:nth-child(6),
-  #historyTable thead th:nth-child(6),
-  #liveRankTable thead th.col-menu,
-  #historyTable thead th.col-menu {
-    flex: 0 0 auto;
-    min-width: 3.25rem;
-    max-width: none;
-    text-align: center;
-    white-space: nowrap;
-    overflow: visible;
-    text-overflow: clip;
+  /* 列幅: thead / tbody で同一 */
+  #liveRankTable th:nth-child(1),
+  #liveRankTable td:nth-child(1),
+  #historyTable th:nth-child(1),
+  #historyTable td:nth-child(1) {
+    width: 3rem;
+    min-width: 3rem;
+    max-width: 3.25rem;
   }
 
-  /* スマホ: （買注）（売注）は省略（銘柄名のみ） */
-  #liveRankTable .rank-order-note,
-  #historyTable .rank-order-note {
-    display: none !important;
+  #liveRankTable th:nth-child(2),
+  #liveRankTable td:nth-child(2),
+  #historyTable th:nth-child(2),
+  #historyTable td:nth-child(2) {
+    width: 5.75rem;
+    min-width: 5.75rem;
+    max-width: 7.5rem;
+  }
+
+  #liveRankTable th:nth-child(3),
+  #liveRankTable td:nth-child(3),
+  #historyTable th:nth-child(3),
+  #historyTable td:nth-child(3) {
+    width: 3.5rem;
+    min-width: 3.5rem;
+    max-width: 4rem;
+  }
+
+  #liveRankTable th:nth-child(4),
+  #liveRankTable td:nth-child(4),
+  #historyTable th:nth-child(4),
+  #historyTable td:nth-child(4) {
+    width: 11.5rem;
+    min-width: 11.5rem;
+    max-width: 16rem;
+  }
+
+  #liveRankTable th:nth-child(5),
+  #liveRankTable td:nth-child(5),
+  #historyTable th:nth-child(5),
+  #historyTable td:nth-child(5) {
+    width: 9.5rem;
+    min-width: 9.5rem;
+    max-width: 13rem;
+  }
+
+  #liveRankTable th:nth-child(6),
+  #liveRankTable td:nth-child(6),
+  #historyTable th:nth-child(6),
+  #historyTable td:nth-child(6) {
+    width: 5rem;
+    min-width: 5rem;
+    max-width: 6rem;
+    padding-left: 4px;
+    padding-right: 4px;
   }
 
   #liveRankTable tbody tr.rank-table-empty,
   #historyTable tbody tr.rank-table-empty {
-    display: block;
-    margin-bottom: 12px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-sizing: border-box;
-    text-align: center;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
   }
 
   #liveRankTable tbody tr.rank-table-empty td,
   #historyTable tbody tr.rank-table-empty td {
-    display: block;
-    width: 100% !important;
-    border: none;
+    display: table-cell;
+    width: 100%;
+    min-width: 16rem;
+    max-width: none;
+    padding: 16px 12px;
     text-align: center;
-  }
-
-  #liveRankTable tbody tr.rank-row,
-  #historyTable tbody tr.rank-row {
-    display: grid;
-    grid-template-columns: minmax(2.75rem, auto) 1fr minmax(4.25rem, auto);
-    grid-template-areas:
-      "g-rank g-name g-pct"
-      "g-sym g-sym g-sym"
-      "g-trd g-trd g-trd"
-      "g-menu g-menu g-menu";
-    column-gap: 10px;
-    row-gap: 8px;
-    align-items: start;
-    margin-bottom: 12px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-sizing: border-box;
-  }
-
-  #liveRankTable tbody tr.rank-row td:nth-child(1),
-  #historyTable tbody tr.rank-row td:nth-child(1) {
-    grid-area: g-rank;
-    align-self: center;
-    text-align: center;
-  }
-
-  #liveRankTable tbody tr.rank-row td:nth-child(2),
-  #historyTable tbody tr.rank-row td:nth-child(2) {
-    grid-area: g-name;
-    align-self: center;
-  }
-
-  #liveRankTable tbody tr.rank-row td:nth-child(3),
-  #historyTable tbody tr.rank-row td:nth-child(3) {
-    grid-area: g-pct;
-  }
-
-  #liveRankTable tbody tr.rank-row td:nth-child(4),
-  #historyTable tbody tr.rank-row td:nth-child(4) {
-    grid-area: g-sym;
-  }
-
-  #liveRankTable tbody tr.rank-row td:nth-child(5),
-  #historyTable tbody tr.rank-row td:nth-child(5) {
-    grid-area: g-trd;
-  }
-
-  #liveRankTable tbody tr.rank-row td:nth-child(6),
-  #historyTable tbody tr.rank-row td:nth-child(6) {
-    grid-area: g-menu;
+    border-bottom: 1px solid rgba(18, 61, 62, 0.1);
+    background: #fcfffe;
   }
 
   #liveRankTable tbody tr.rank-row td,
   #historyTable tbody tr.rank-row td {
-    display: block;
-    width: auto !important;
-    min-width: 0 !important;
-    padding: 0;
-    margin: 0;
-    font-size: 0.875rem;
-    line-height: 1.4;
-    text-align: left;
+    display: table-cell;
+    vertical-align: top;
+    box-sizing: border-box;
+    padding: 8px 6px;
+    font-size: clamp(0.62rem, 1.35vw + 0.48rem, 0.8rem);
+    line-height: 1.45;
+    border-bottom: 1px solid rgba(18, 61, 62, 0.1);
     white-space: normal;
-    overflow: visible;
-    border: none;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     word-break: break-word;
   }
 
-  /* B: ラベルは QA 目安 11〜12px */
-  #liveRankTable tbody tr.rank-row td::before,
-  #historyTable tbody tr.rank-row td::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 0.72rem;
+  #liveRankTable tbody tr.rank-row td:nth-child(1),
+  #historyTable tbody tr.rank-row td:nth-child(1) {
+    text-align: center;
+    vertical-align: middle;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    opacity: 0.78;
-    margin-bottom: 3px;
-  }
-
-  #liveRankTable tbody tr.rank-row td[data-label=""]::before,
-  #historyTable tbody tr.rank-row td[data-label=""]::before {
-    content: none;
-  }
-
-  /* アカウント名: 枠内の中央（ラベル＋本文を縦横そろえて中央） */
-  #liveRankTable tbody tr.rank-row td.rank-account-cell,
-  #historyTable tbody tr.rank-row td.rank-account-cell {
-    max-height: none;
-    overflow: visible;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-  }
-
-  #liveRankTable tbody tr.rank-row td.rank-account-cell::before,
-  #historyTable tbody tr.rank-row td.rank-account-cell::before {
-    width: 100%;
-    text-align: center;
-  }
-
-  #liveRankTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n6,
-  #historyTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n6 {
-    font-size: clamp(0.98rem, 1.1vw + 0.82rem, 1.12rem);
-    line-height: 1.38;
-  }
-
-  #liveRankTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n7,
-  #historyTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n7 {
-    font-size: clamp(0.9rem, 0.95vw + 0.76rem, 1.02rem);
-    line-height: 1.38;
-  }
-
-  #liveRankTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n8,
-  #historyTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n8 {
-    font-size: clamp(0.84rem, 0.85vw + 0.7rem, 0.94rem);
-    line-height: 1.4;
-    letter-spacing: -0.015em;
-  }
-
-  #liveRankTable tbody tr.rank-row td.rank-account-cell .rank-account-cell__inner,
-  #historyTable tbody tr.rank-row td.rank-account-cell .rank-account-cell__inner {
-    flex: 0 0 auto;
-    align-self: center;
-    line-height: 1.35;
-    font-stretch: normal;
   }
 
   #liveRankTable tbody tr.rank-row td:nth-child(3),
   #historyTable tbody tr.rank-row td:nth-child(3) {
     text-align: center;
+    vertical-align: middle;
     font-weight: 700;
-    font-size: 0.94rem;
-    align-self: center;
-  }
-
-  #liveRankTable tbody tr.rank-row td:nth-child(3) .rank-pct-cell__inner,
-  #historyTable tbody tr.rank-row td:nth-child(3) .rank-pct-cell__inner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    text-align: center;
-    line-height: 1.35;
-    font-stretch: normal;
-  }
-
-  #liveRankTable tbody tr.rank-row td:nth-child(3)::before,
-  #historyTable tbody tr.rank-row td:nth-child(3)::before {
-    text-align: center;
   }
 
   #liveRankTable tbody tr.rank-row td.rank-symbols-cell,
   #historyTable tbody tr.rank-row td.rank-symbols-cell {
-    max-width: none;
-    max-height: 7rem;
-    overflow-x: hidden !important;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    font-size: clamp(0.64rem, 2.2vw + 0.42rem, 0.84rem);
-    font-weight: 400;
     font-family: var(--font-jp);
+    font-size: clamp(0.6rem, 1.25vw + 0.46rem, 0.78rem);
     line-height: 1.5;
-    /* 親 td の overflow-wrap:anywhere を打ち消し、銘柄は .rank-holding-pair 単位 */
-    overflow-wrap: normal !important;
+    overflow-wrap: normal;
     word-break: keep-all;
     line-break: strict;
-    white-space: normal;
-    align-items: stretch;
-    min-width: 0;
-    /* 親で display:block のため vertical-align は無効 */
-    font-feature-settings: "palt" 1;
-    padding-bottom: 2px;
+    max-height: 8rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* スマホカード: 1 銘柄＝1 行（銘柄同士の改行が明確、セル外へはみ出さない） */
   #liveRankTable tbody tr.rank-row td.rank-symbols-cell .rank-holding-pair,
   #historyTable tbody tr.rank-row td.rank-symbols-cell .rank-holding-pair {
     display: block;
@@ -3059,304 +2984,19 @@ tbody tr:hover {
     line-height: 1.45;
   }
 
-  #liveRankTable tbody tr.rank-row td:nth-child(5),
-  #historyTable tbody tr.rank-row td:nth-child(5) {
-    font-size: 0.82rem;
-    max-height: 12rem;
+  #liveRankTable tbody tr.rank-row td.rank-trade-col,
+  #historyTable tbody tr.rank-row td.rank-trade-col {
+    font-size: clamp(0.58rem, 1.2vw + 0.44rem, 0.76rem);
+    line-height: 1.42;
+    max-height: 10rem;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  #liveRankTable tbody tr.rank-row td.col-menu,
-  #historyTable tbody tr.rank-row td.col-menu {
-    border-top: 1px solid rgba(13, 61, 62, 0.14);
-    padding-top: 10px;
-    margin-top: 2px;
-    white-space: normal;
-    text-align: left;
-  }
-
-  /* C: 操作列（カードレイアウト）— ⋮ の下に2列パネル */
-  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-wrap,
-  #historyTable tbody tr.rank-row td.col-menu .rank-menu-wrap {
-    width: 100%;
-    align-items: flex-end;
-    justify-content: flex-start;
-    gap: 8px;
-  }
-
-  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-panel,
-  #historyTable tbody tr.rank-row td.col-menu .rank-menu-panel {
-    max-width: none;
-    gap: 8px;
-  }
-
-  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-detail-btn,
-  #historyTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-detail-btn,
-  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-report-btn:not(.hidden),
-  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-unreport-btn:not(.hidden),
-  #historyTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-report-btn:not(.hidden),
-  #historyTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-unreport-btn:not(.hidden) {
-    text-align: center;
-    line-height: 1.25;
-    white-space: normal;
-    min-height: clamp(34px, 8.5vw, 42px);
-    font-size: clamp(0.62rem, 0.42vw + 0.54rem, 0.8rem);
-    padding: clamp(4px, 1vw, 7px) clamp(5px, 1.1vw, 9px);
-  }
-
-  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-trigger,
-  #historyTable tbody tr.rank-row td.col-menu .rank-menu-trigger {
-    min-width: clamp(36px, 9vw, 48px);
-    min-height: clamp(36px, 9vw, 48px);
-    flex: 0 0 auto;
-    align-self: flex-end;
-  }
-
-  /* カードレイアウト：順位セル内で縦横中央（中身 span.rank-no を中央に） */
-  #liveRankTable tbody tr.rank-row td.rank-td,
-  #historyTable tbody tr.rank-row td.rank-td {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    font-size: clamp(1.02rem, 1.15vw + 0.84rem, 1.08rem);
-    line-height: 1.2;
-    font-weight: 600;
-    min-height: 2.5em;
-  }
-
-  #liveRankTable tbody tr.rank-row td.rank-td .rank-no,
-  #historyTable tbody tr.rank-row td.rank-td .rank-no {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .rank-holding-pending {
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-    max-width: none;
-    display: inline;
-    vertical-align: bottom;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-    font-weight: 400;
-    font-family: inherit;
-  }
-
-  .rank-trade-name {
-    white-space: normal;
-    max-width: none;
-    text-overflow: clip;
-    display: inline;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-  }
-
-  .rank-trade-inline-item {
-    overflow-wrap: anywhere;
-    word-break: break-word;
-  }
-
-  .table-wrap {
-    -webkit-overflow-scrolling: touch;
-    overflow-x: hidden;
-    max-width: 100%;
-  }
-
-  /* 今月・過去ランキング: 横スクロール */
-  #historyCard .table-wrap,
-  #liveRankCard .table-wrap {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* 今月・過去ランキング: thead 列名と揃え、幅を flex で均等利用・文字は clamp で画面に追従 */
-  #liveRankTable tbody tr.rank-row,
-  #historyTable tbody tr.rank-row {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: flex-start;
-    gap: clamp(3px, 1vw, 8px);
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    padding: 8px 8px 10px;
-    margin-bottom: 10px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  #liveRankTable tbody tr.rank-row td,
-  #historyTable tbody tr.rank-row td {
-    display: flex;
-    flex-direction: column;
-    flex-wrap: nowrap;
-    align-items: flex-start;
-    justify-content: flex-start;
-    box-sizing: border-box;
-    padding: 2px 3px;
-    font-size: clamp(0.67rem, 0.55vw + 0.57rem, 0.78rem);
-    line-height: 1.35;
-    max-height: none;
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-    min-width: 0;
-  }
-
-  #liveRankTable tbody tr.rank-row td:nth-child(1),
-  #historyTable tbody tr.rank-row td:nth-child(1) {
-    flex: 0 0 2.75rem;
-    max-width: 3rem;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-weight: 650;
-    align-self: flex-start;
-  }
-
-  #liveRankTable tbody tr.rank-row td:nth-child(2),
-  #historyTable tbody tr.rank-row td:nth-child(2) {
-    flex: 0 1 15%;
-    min-width: 3.25rem;
-    max-width: none;
-    justify-content: flex-start;
-    text-align: left;
-  }
-
-  #liveRankTable tbody tr.rank-row td:nth-child(3),
-  #historyTable tbody tr.rank-row td:nth-child(3) {
-    flex: 0 0 3.1rem;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-weight: 700;
-    align-self: flex-start;
-  }
-
-  #liveRankTable tbody tr.rank-row td:nth-child(4),
-  #historyTable tbody tr.rank-row td:nth-child(4) {
-    flex: 1 1 22%;
-    min-width: 0;
-    max-width: 42%;
-    overflow-x: hidden;
-    overflow-y: visible;
-    text-overflow: clip;
-    white-space: normal;
-    overflow-wrap: normal;
-    word-break: keep-all;
-  }
-
-  #liveRankTable tbody tr.rank-row td:nth-child(5),
-  #historyTable tbody tr.rank-row td:nth-child(5) {
-    flex: 1 1 26%;
-    min-width: 4.25rem;
-    max-width: none;
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-  }
-
-  #liveRankTable tbody tr.rank-row td:nth-child(6),
-  #historyTable tbody tr.rank-row td:nth-child(6) {
-    flex: 0 0 auto;
-    min-width: 4.75rem;
-    max-width: none;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    align-self: flex-start;
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-    border-top: none;
-    padding-top: 2px;
-    margin-top: 0;
-  }
-
-  #liveRankTable tbody tr.rank-row td.rank-trade-col,
-  #historyTable tbody tr.rank-row td.rank-trade-col {
-    min-width: 0;
-  }
-
-  #liveRankTable tbody tr.rank-row td.rank-trade-col .rank-trade-details,
-  #historyTable tbody tr.rank-row td.rank-trade-col .rank-trade-details {
-    width: 100%;
-    min-width: 0;
-  }
-
-  #liveRankTable tbody tr.rank-row td.rank-trade-col .rank-trade-summary,
-  #historyTable tbody tr.rank-row td.rank-trade-col .rank-trade-summary {
-    white-space: normal;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-    line-height: 1.42;
-  }
-
-  /* 保有銘柄・取引内容をアカウント名と同程度の小ささに揃え、下欠けを防ぐ */
-  #liveRankTable tbody tr.rank-row td.rank-symbols-cell,
-  #historyTable tbody tr.rank-row td.rank-symbols-cell,
-  #liveRankTable tbody tr.rank-row td.rank-trade-col,
-  #historyTable tbody tr.rank-row td.rank-trade-col {
-    font-size: clamp(0.6rem, 1.45vw + 0.5rem, 0.74rem) !important;
-    line-height: 1.45 !important;
-    padding-bottom: 5px !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    overflow: visible !important;
-  }
-
-  #liveRankTable tbody tr.rank-row td.rank-symbols-cell *,
-  #historyTable tbody tr.rank-row td.rank-symbols-cell *,
-  #liveRankTable tbody tr.rank-row td.rank-trade-col *,
-  #historyTable tbody tr.rank-row td.rank-trade-col * {
-    font-size: inherit !important;
-    line-height: inherit !important;
-  }
-
-  #liveRankTable tbody tr.rank-row .rank-note,
-  #historyTable tbody tr.rank-row .rank-note,
-  #liveRankTable tbody tr.rank-row .rank-note--stacked,
-  #historyTable tbody tr.rank-row .rank-note--stacked,
-  #liveRankTable tbody tr.rank-row .rank-note__line1,
-  #historyTable tbody tr.rank-row .rank-note__line1,
-  #liveRankTable tbody tr.rank-row .rank-note__line2,
-  #historyTable tbody tr.rank-row .rank-note__line2 {
-    font-size: inherit !important;
-    line-height: inherit !important;
-  }
-
-  #liveRankTable tbody tr.rank-row td.rank-symbols-cell .rank-holding-pending,
-  #historyTable tbody tr.rank-row td.rank-symbols-cell .rank-holding-pending {
-    white-space: normal;
-  }
-
-  /* 列名は thead 表示のため、セル内 data-label は出さない */
-  #liveRankTable tbody tr.rank-row td::before,
-  #historyTable tbody tr.rank-row td::before {
-    content: none !important;
-    display: none !important;
-    margin: 0 !important;
-    width: 0 !important;
-    height: 0 !important;
-    overflow: hidden !important;
-  }
-
   #liveRankTable tbody tr.rank-row td.rank-account-cell,
   #historyTable tbody tr.rank-row td.rank-account-cell {
-    align-items: flex-start;
     text-align: left;
+    vertical-align: middle;
   }
 
   #liveRankTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n6,
@@ -3365,44 +3005,82 @@ tbody tr:hover {
   #historyTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n7,
   #liveRankTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n8,
   #historyTable tbody tr.rank-row td.rank-account-cell.rank-account-cell--n8 {
-    font-size: clamp(0.6rem, 1.45vw + 0.5rem, 0.74rem);
+    font-size: clamp(0.58rem, 1.2vw + 0.44rem, 0.76rem);
     line-height: 1.45;
-    letter-spacing: 0;
     font-weight: 600;
+    letter-spacing: 0;
   }
 
   #liveRankTable tbody tr.rank-row td.rank-account-cell .rank-account-cell__inner,
   #historyTable tbody tr.rank-row td.rank-account-cell .rank-account-cell__inner {
-    align-self: stretch;
+    display: block;
     text-align: left;
     white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
     width: 100%;
-    max-width: 100%;
   }
 
-  #liveRankTable tbody tr.rank-row td.rank-td,
-  #historyTable tbody tr.rank-row td.rank-td {
-    min-height: 0;
-    font-size: clamp(0.67rem, 0.55vw + 0.57rem, 0.78rem);
-    width: auto !important;
-    flex-direction: row;
+  #liveRankTable tbody tr.rank-row td.rank-td .rank-no,
+  #historyTable tbody tr.rank-row td.rank-td .rank-no {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0.15em;
+  }
+
+  #liveRankTable tbody tr.rank-row td::before,
+  #historyTable tbody tr.rank-row td::before,
+  #liveRankTable tbody tr.rank-table-empty td::before,
+  #historyTable tbody tr.rank-table-empty td::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  #liveRankTable tbody tr.rank-row td.col-menu,
+  #historyTable tbody tr.rank-row td.col-menu {
+    text-align: center;
+    vertical-align: top;
   }
 
   #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-wrap,
   #historyTable tbody tr.rank-row td.col-menu .rank-menu-wrap {
-    gap: 4px;
-    align-items: flex-end;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: flex-start;
+    gap: 6px;
+    width: 100%;
   }
 
   #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-panel,
   #historyTable tbody tr.rank-row td.col-menu .rank-menu-panel {
+    width: 100%;
     max-width: 100%;
-    gap: 4px;
+    gap: 6px;
+  }
+
+  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-detail-btn,
+  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-report-btn:not(.hidden),
+  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-unreport-btn:not(.hidden),
+  #historyTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-detail-btn,
+  #historyTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-report-btn:not(.hidden),
+  #historyTable tbody tr.rank-row td.col-menu .rank-menu-panel .rank-menu-unreport-btn:not(.hidden) {
+    font-size: clamp(0.55rem, 1.5vw + 0.4rem, 0.72rem);
+    padding: 5px 6px;
+    line-height: 1.2;
+    min-height: 36px;
+    white-space: normal;
+    text-align: center;
+  }
+
+  #liveRankTable tbody tr.rank-row td.col-menu .rank-menu-trigger,
+  #historyTable tbody tr.rank-row td.col-menu .rank-menu-trigger {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  #liveRankTable .rank-order-note,
+  #historyTable .rank-order-note {
+    display: none !important;
   }
 
   .rank-holding-pending-label {

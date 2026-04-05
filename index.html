@@ -120,7 +120,7 @@
     href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="./stockgame.css?v=86" />
+  <link rel="stylesheet" href="./stockgame.css?v=88" />
 </head>
 <body>
   <noscript>
@@ -166,9 +166,9 @@
       <div class="report-reason-dialog card intro-dialog">
         <h3>操作方法とルール</h3>
         <div class="intro-body">
-          <p><strong>このアプリでできること</strong><br>毎月の運用（購入・売却）で、保有銘柄の上昇率（%）を参加者どうしで競うゲームです。ランキング1位を目指して遊びましょう！</p>
+          <p><strong>このアプリでできること</strong><br>毎月の運用で、保有銘柄の上昇率（%）を参加者同士で競うゲームです。ランキング1位を目指してがんばりましょう！</p>
           <p><strong>保有できる銘柄数</strong><br>銘柄の追加画面で、<strong>最低1銘柄</strong>・<strong>最大5銘柄</strong>まで保有できます。</p>
-          <p><strong>注文と約定</strong><br>買い注文・売り注文は（売買できる期間内で）いつでも入力できますが、注文が成立（約定）するタイミングは市場ごとに決まっています。<br>日本株・米国株は<strong>1日2回</strong>（始値30分後／終値）、仮想通貨は<strong>日本時間0:00／12:00</strong>に約定します。</p>
+          <p><strong>注文と約定</strong><br>買い注文・売り注文は、売買できる期間内であればいつでも入力できます。<br class="rule-br-mobile" />約定のタイミングは市場ごとに決まっています。<br />日本株・米国株は<strong>1日2回</strong>（寄りの約30分後と終値）、仮想通貨は<strong>日本時間 0:00／12:00</strong>に約定します。</p>
           <p><strong>対象月</strong><br>毎月1日0:00（日本時間）から月末まで。その月の結果は月が変わると確定し、履歴に残ります。</p>
         </div>
         <button type="button" class="btn btn-primary intro-close-btn">理解しました</button>
@@ -195,19 +195,19 @@
         <div id="registerRulesStep" class="register-rules-step hidden">
           <h3>ルール</h3>
           <div class="register-rules-body">
-            <p class="rule-lead rule-lead--flow">毎月の購入・売却などの運用で、保有銘柄の上昇率（%）を参加者どうしで競うゲームです。<br />ランキング1位を目指して頑張りましょう！</p>
+            <p class="rule-lead rule-lead--flow">毎月の運用で、保有銘柄の上昇率（%）を参加者同士で競うゲームです。<br />ランキング1位を目指してがんばりましょう！</p>
             <ul class="rule-list">
-              <li><strong>保有数</strong>: 1人 <strong>最低1銘柄</strong>・<strong>最大5銘柄</strong></li>
-              <li><strong>注文入力</strong>: 売買できる期間内で、買い注文・売り注文をいつでも入力できます</li>
+              <li><strong>保有銘柄</strong>: 1人あたり<strong>最低1銘柄</strong>・<strong>最大5銘柄</strong></li>
+              <li><strong>注文入力</strong>: 売買できる期間内で、<br class="rule-br-mobile" />買い注文・売り注文をいつでも入力できます</li>
               <li><strong>約定タイミング</strong>:
-                <ul>
-                  <li>日本株・米国株: <strong>1日2回</strong>（始値30分後／終値）</li>
+                <ul class="rule-timing-sub">
+                  <li>日本株・米国株: <strong>1日2回</strong>（始値の約30分後／終値）</li>
                   <li>仮想通貨: <strong>日本時間 0:00／12:00</strong></li>
                 </ul>
               </li>
               <li><strong>結果の確定</strong>: 月が変わるとその月の結果が確定し、ランキングと履歴に残ります</li>
-              <li><strong>月ごとの運用</strong>: 月ごとに株価上昇率でバトルし、使用したアカウントは月ごとに作ってください</li>
-              <li><strong>注意</strong>: 先月までに作成したアカウントは、今月の参加に使用できません</li>
+              <li><strong>月ごとの運用</strong>: 月ごとに株価上昇率で順位を競います。<br class="rule-br-mobile" />その月に参加するときは、その月用に新しくアカウントを作成してください</li>
+              <li><strong>注意</strong>: 先月以前に作成したアカウントは、今月の参加に使えません。<br class="rule-br-mobile" />参加するときは作り直してください。</li>
             </ul>
           </div>
           <button type="button" id="registerRulesOkBtn" class="btn btn-primary">確認</button>
@@ -552,19 +552,19 @@
       <article class="card reveal hidden" id="ruleCard">
         <h2>ルール</h2>
         <div class="rule-body">
-          <p class="rule-lead rule-lead--flow">毎月の購入・売却などの運用で、保有銘柄の上昇率（%）を参加者どうしで競うゲームです。<br />ランキング1位を目指して頑張りましょう！</p>
+          <p class="rule-lead rule-lead--flow">毎月の運用で、保有銘柄の上昇率（%）を参加者同士で競うゲームです。<br />ランキング1位を目指してがんばりましょう！</p>
           <ul class="rule-list">
-            <li><strong>保有数</strong>: 1人 <strong>最低1銘柄</strong>・<strong>最大5銘柄</strong></li>
-            <li><strong>注文入力</strong>: 売買できる期間内で、買い注文・売り注文をいつでも入力できます</li>
+            <li><strong>保有銘柄</strong>: 1人あたり<strong>最低1銘柄</strong>・<strong>最大5銘柄</strong></li>
+            <li><strong>注文入力</strong>: 売買できる期間内で、<br class="rule-br-mobile" />買い注文・売り注文をいつでも入力できます</li>
             <li><strong>約定タイミング</strong>:
-              <ul>
-                <li>日本株・米国株: <strong>1日2回</strong>（始値30分後／終値）</li>
+              <ul class="rule-timing-sub">
+                <li>日本株・米国株: <strong>1日2回</strong>（始値の約30分後／終値）</li>
                 <li>仮想通貨: <strong>日本時間 0:00／12:00</strong></li>
               </ul>
             </li>
             <li><strong>結果の確定</strong>: 月が変わるとその月の結果が確定し、ランキングと履歴に残ります</li>
-            <li><strong>月ごとの運用</strong>: 月ごとに株価上昇率でバトルし、使用したアカウントは月ごとに作ってください</li>
-            <li><strong>注意</strong>: 先月までに作成したアカウントは、今月の参加に使用できません。作り直してください。</li>
+            <li><strong>月ごとの運用</strong>: 月ごとに株価上昇率で順位を競います。<br class="rule-br-mobile" />その月に参加するときは、その月用に新しくアカウントを作成してください</li>
+            <li><strong>注意</strong>: 先月以前に作成したアカウントは、今月の参加に使えません。<br class="rule-br-mobile" />参加するときは作り直してください。</li>
           </ul>
         </div>
       </article>
