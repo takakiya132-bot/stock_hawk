@@ -10,7 +10,8 @@ const CONFIG = Object.freeze({
   minPicks: 1,
   maxPicks: 5,
   purchaseDays: 31,
-  rankingKeepMonths: 36,
+  /** 過去の確定ランキングを保持・表示する月数（約2年） */
+  rankingKeepMonths: 24,
   quoteTtlMs: 30 * 60 * 1000,
   historyTtlMs: 12 * 60 * 60 * 1000,
   staleQuoteMaxMs: 24 * 60 * 60 * 1000,
@@ -65,9 +66,12 @@ const CONFIG = Object.freeze({
   cloudPullMinIntervalMs: 10 * 1000,
   /** 未ログイン向け ranking-snapshot のクライアント側スロットル（タブ復帰・可視化の連打対策。日4回の定時取得は別ルート） */
   /* 可視タブの定期 pull でランキングを取り直す最短間隔（削除反映を遅らせないよう短め） */
-  publicRankingSnapshotMinIntervalMs: 2 * 60 * 1000,
-  /** 同一クライアントからの Yahoo Finance（query1 / chart / search）への最短間隔（ms）。429 回避の余裕を少し持たせる */
-  yahooFinanceMinGapMs: 620,
+  publicRankingSnapshotMinIntervalMs: 3 * 60 * 1000,
+  /** 過去の結果の月プルダウンを短時間に切り替えすぎない（描画・体感負荷対策） */
+  clientRateHistoryMonthWindowMs: 60 * 1000,
+  clientRateHistoryMonthMax: 24,
+  /** 同一クライアントからの Yahoo Finance（query1 / chart / search）への最短間隔（ms）。Jina 経由の間接取得も同じクロックで空ける */
+  yahooFinanceMinGapMs: 850,
   /** Yahoo 銘柄検索 API（v1/search）の連打制限（嫌がらせ・スキャン対策） */
   clientRateYahooSearchWindowMs: 60 * 1000,
   clientRateYahooSearchMax: 5,
@@ -927,6 +931,8 @@ const CRYPTO_BASE_SET = new Set(
 
 const app = {
   state: null,
+  /** 過去の結果セレクトで、レート制限時に戻す直前の確定値 */
+  lastHistoryMonthSelectValue: "",
   sessionUserId: null,
   lastPreview: null,
   chartLinkContext: null,
@@ -2597,7 +2603,7 @@ function wireEvents() {
   app.els.liveRankBody.addEventListener("toggle", onTradeDetailsToggle, true);
   app.els.historyTableBody.addEventListener("toggle", onTradeDetailsToggle, true);
 
-  app.els.historyMonthSelect.addEventListener("change", renderHistoryTable);
+  app.els.historyMonthSelect.addEventListener("change", onHistoryMonthSelectChange);
   document.addEventListener("click", onDocumentClick);
   window.addEventListener("beforeunload", (e) => {
     if (app.view !== "pick") return;
@@ -3101,7 +3107,7 @@ function renderPickTable() {
   const picks = user.picks || [];
   const openPicks = picks.filter((p) => p.status !== "CLOSED");
   if (!openPicks.length && !picks.length) {
-    body.innerHTML = `<tr class="pick-table-empty"><td colspan="6" data-label="">銘柄を追加するか、${CONFIG.minPicks}〜${CONFIG.maxPicks}銘柄で確定してください。</td></tr>`;
+    body.innerHTML = `<tr class="pick-table-empty"><td colspan="6" data-label="">${CONFIG.minPicks}〜${CONFIG.maxPicks}銘柄追加してください。</td></tr>`;
     return;
   }
   if (!openPicks.length) {
@@ -3468,6 +3474,27 @@ function renderLiveRanking() {
   });
 }
 
+function onHistoryMonthSelectChange() {
+  const sel = app.els.historyMonthSelect;
+  const rl = getClientRateLimitMessageIfRejected(
+    "historyMonth",
+    CONFIG.clientRateHistoryMonthMax,
+    CONFIG.clientRateHistoryMonthWindowMs
+  );
+  if (rl) {
+    const revert =
+      app.lastHistoryMonthSelectValue ||
+      (sel.options[0] ? sel.options[0].value : "");
+    if (revert && [...sel.options].some((o) => o.value === revert)) sel.value = revert;
+    else sel.selectedIndex = 0;
+    app.els.historyMeta.textContent = rl;
+    return;
+  }
+  app.lastHistoryMonthSelectValue = sel.value;
+  app.els.historyMeta.textContent = "";
+  renderHistoryTable();
+}
+
 function renderHistorySelect() {
   const select = app.els.historyMonthSelect;
   const currentValue = select.value;
@@ -3494,6 +3521,7 @@ function renderHistorySelect() {
   } else {
     select.selectedIndex = 0;
   }
+  app.lastHistoryMonthSelectValue = select.value;
 }
 
 function renderHistoryTable() {
@@ -7757,8 +7785,20 @@ async function fetchJson(url, timeoutMs) {
   let lastError = null;
   const routes = buildFetchRoutes(url);
   const routeAttempts = [];
+  let abortedByFetchGate = false;
 
   for (const route of routes) {
+    if (routeAttempts.length && isYahooFinanceUrl(url)) {
+      try {
+        checkAbuseFetchGateOrThrow();
+      } catch (gateErr) {
+        const reason = summarizeApiError(gateErr);
+        routeAttempts.push({ route: "rate-limit", reason });
+        lastError = gateErr instanceof Error ? gateErr : new Error(String(gateErr));
+        abortedByFetchGate = true;
+        break;
+      }
+    }
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -7789,10 +7829,12 @@ async function fetchJson(url, timeoutMs) {
     lastError.message = joined || lastError.message;
     lastError.routeAttempts = routeAttempts;
     // Yahoo はブラウザCORSで落ちることがあるため、直取得失敗後は Jina で回復を試す。
-    // ※対話中（現在値ボタン等）もここをスキップすると「全く取得できない」ことがあるため、Jina は常に試す。
+    // Jina も Yahoo への間接アクセスなので、abuse ゲート＋Yahoo 間隔を通してから試す。
     try {
       const rawUrl = String(url || "");
-      if (/finance\.yahoo\.com/i.test(rawUrl)) {
+      if (!abortedByFetchGate && /finance\.yahoo\.com/i.test(rawUrl)) {
+        checkAbuseFetchGateOrThrow();
+        await waitYahooFinanceMinIntervalIfNeeded(rawUrl);
         const jinaUrl = "https://r.jina.ai/" + rawUrl;
         const jinaTimeoutMs = Math.max(Number(timeoutMs) || 5000, app.interactiveFetch ? 12000 : 8000);
         const controller = new AbortController();
@@ -7816,7 +7858,9 @@ async function fetchJson(url, timeoutMs) {
         if (i >= 0 && j > i) return JSON.parse(trimmed.slice(i, j + 1));
       }
     } catch (proxyErr) {
-      // プロキシ失敗は元の lastError を優先
+      if (proxyErr instanceof Error && /負荷防止|通信が制限|制限されています/.test(proxyErr.message)) {
+        lastError = proxyErr;
+      }
     }
 
     throw lastError;
@@ -7828,8 +7872,20 @@ async function fetchText(url, timeoutMs) {
   let lastError = null;
   const routes = buildFetchRoutes(url);
   const routeAttempts = [];
+  let abortedByFetchGate = false;
 
   for (const route of routes) {
+    if (routeAttempts.length && isYahooFinanceUrl(url)) {
+      try {
+        checkAbuseFetchGateOrThrow();
+      } catch (gateErr) {
+        const reason = summarizeApiError(gateErr);
+        routeAttempts.push({ route: "rate-limit", reason });
+        lastError = gateErr instanceof Error ? gateErr : new Error(String(gateErr));
+        abortedByFetchGate = true;
+        break;
+      }
+    }
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -7861,7 +7917,9 @@ async function fetchText(url, timeoutMs) {
     // Yahoo のテキスト取得も CORS で失敗する場合があるため、最後に Jina を試す（対話中も同様）
     try {
       const rawUrl = String(url || "");
-      if (/finance\.yahoo\.com/i.test(rawUrl)) {
+      if (!abortedByFetchGate && /finance\.yahoo\.com/i.test(rawUrl)) {
+        checkAbuseFetchGateOrThrow();
+        await waitYahooFinanceMinIntervalIfNeeded(rawUrl);
         const jinaUrl = "https://r.jina.ai/" + rawUrl;
         const jinaTimeoutMs = Math.max(Number(timeoutMs) || 5000, app.interactiveFetch ? 12000 : 8000);
         const controller = new AbortController();
@@ -7872,6 +7930,9 @@ async function fetchText(url, timeoutMs) {
         return String(text || "");
       }
     } catch (proxyErr) {
+      if (proxyErr instanceof Error && /負荷防止|通信が制限|制限されています/.test(proxyErr.message)) {
+        lastError = proxyErr;
+      }
     }
     throw lastError;
   }
@@ -9413,7 +9474,7 @@ function seasonIndexToKey(index) {
 }
 
 function buildRollingSeasonKeys(months) {
-  const count = Number.isFinite(months) ? Math.max(1, Math.floor(months)) : 36;
+  const count = Number.isFinite(months) ? Math.max(1, Math.floor(months)) : 24;
   const current = seasonToIndex(getSeasonKeyJst(new Date()));
   const out = [];
   for (let i = 0; i < count; i += 1) {
